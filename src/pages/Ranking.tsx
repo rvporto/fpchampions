@@ -2,12 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, FileText, Crown, Medal, Loader2 } from "lucide-react";
+import { Trophy, FileText, Crown, Medal, Loader2, RefreshCw } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRanking } from "@/hooks/useRanking";
+import { recalcRankingAndXp } from "@/lib/recalc";
+import { renderAndCapture } from "@/lib/reports";
+import { RankingReport } from "@/components/Reports";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
   const year = new Date().getFullYear();
