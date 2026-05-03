@@ -2,7 +2,7 @@ export const formatBRL = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v ?? 0);
 
 export const formatPoints = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v ?? 0);
+  new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v ?? 0);
 
 export const formatDateTime = (d: Date | string) => {
   const date = typeof d === "string" ? new Date(d) : d;
