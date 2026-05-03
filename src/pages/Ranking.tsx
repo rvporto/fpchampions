@@ -7,11 +7,12 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRanking } from "@/hooks/useRanking";
+import { useRanking, useSeasonRankingDelta, rowKey } from "@/hooks/useRanking";
 import { recalcRankingAndXp } from "@/lib/recalc";
 import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
 import { LinkTempPlayerDialog } from "@/components/LinkTempPlayerDialog";
+import { LevelBadge, PositionDelta } from "@/components/RankIndicators";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
