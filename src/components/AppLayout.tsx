@@ -40,8 +40,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 function DesktopHeader({ isAdmin, isLogged, onSignOut }: { isAdmin: boolean; isLogged: boolean; onSignOut: () => void }) {
   return (
     <header className="hidden md:block sticky top-0 z-40 glass-effect">
-      <div className="container max-w-6xl h-16 flex items-center justify-between gap-4">
-        <Link to="/"><Logo /></Link>
+      <div className="container max-w-6xl h-16 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+        <Link to="/"><Logo withText={false} /></Link>
+        <Link to="/" className="justify-self-center leading-tight text-center">
+          <div className="font-display text-base sm:text-lg fpc-text-gold">Família Poker</div>
+          <div className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-muted-foreground">Champions</div>
+        </Link>
         <nav className="flex items-center gap-1">
           {navItems.filter((i) => i.public || isLogged).map((item) => (
             <NavItem key={item.to} {...item} />
