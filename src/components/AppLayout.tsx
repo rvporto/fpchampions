@@ -30,9 +30,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <DesktopHeader isAdmin={isAdmin} isLogged={isLogged} onSignOut={handleSignOut} />
-      <MobileHeader />
-      <main className="flex-1 container max-w-6xl py-6 sm:py-10 pb-28 md:pb-10 animate-fade-in">{children}</main>
-      <MobileFab isAdmin={isAdmin} isLogged={isLogged} onSignOut={handleSignOut} />
+      <MobileHeader isAdmin={isAdmin} isLogged={isLogged} onSignOut={handleSignOut} />
+      <main className="flex-1 container max-w-6xl py-6 sm:py-10 pb-10 animate-fade-in">{children}</main>
       <Footer />
     </div>
   );
