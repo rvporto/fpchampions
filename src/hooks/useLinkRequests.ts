@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile, DbTempPlayer } from "@/lib/db-types";
+import { recalcRankingAndXp } from "@/lib/recalc";
 
 export type LinkRequestStatus = "pending" | "approved" | "rejected";
 
@@ -33,13 +34,13 @@ export function useLinkRequests(status: LinkRequestStatus | "all" = "pending") {
       const [{ data: profs }, { data: temps }] = await Promise.all([
         userIds.length
           ? supabase.from("profiles").select("id, nickname, avatar_url").in("id", userIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Pick<DbProfile, "id" | "nickname" | "avatar_url">[] }),
         tempIds.length
           ? supabase.from("temporary_players").select("id, nickname, avatar_url").in("id", tempIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[] }),
       ]);
-      const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      const tm = new Map((temps ?? []).map((p: any) => [p.id, p]));
+      const pm = new Map(((profs ?? []) as Pick<DbProfile, "id" | "nickname" | "avatar_url">[]).map((p) => [p.id, p]));
+      const tm = new Map(((temps ?? []) as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[]).map((p) => [p.id, p]));
       return rows.map((r) => ({
         ...r,
         profile: pm.get(r.user_id) ?? null,
@@ -65,7 +66,7 @@ export function useCreateLinkRequest() {
   });
 }
 
-// Aprova: migra game_participations do temp para o user, marca request como approved.
+// Aprova: migra game_participations do temp para o user, marca request como approved e recalcula XP histórico.
 export function useApproveLinkRequest() {
   const qc = useQueryClient();
   return useMutation({
@@ -83,6 +84,11 @@ export function useApproveLinkRequest() {
         .update({ status: "approved", reviewed_at: new Date().toISOString() })
         .eq("id", req.id);
       if (e2) throw e2;
+
+      // 3) Remove o jogador temporário e contabiliza partidas já existentes no XP/nível do usuário
+      const { error: e3 } = await supabase.from("temporary_players").delete().eq("id", req.temp_player_id);
+      if (e3) throw e3;
+      await recalcRankingAndXp();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["link_requests"] });
@@ -127,6 +133,7 @@ export function useMergeTempIntoUser() {
         .delete()
         .eq("id", input.temp_player_id);
       if (e3) throw e3;
+      await recalcRankingAndXp();
     },
     onSuccess: () => {
       qc.invalidateQueries();
