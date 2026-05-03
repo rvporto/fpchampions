@@ -58,7 +58,7 @@ export function usePlayerStats(userId: string | null | undefined, seasonYear?: n
         return true;
       });
       const history: PlayerGameRow[] = finished
-        .map((p) => ({ participation: p, game: gMap.get(p.game_id)! }))
+        .map((p) => ({ participation: { ...p, xp_earned: participationXp(p) }, game: gMap.get(p.game_id)! }))
         .sort((a, b) => +new Date(b.game.date) - +new Date(a.game.date));
 
       return {
