@@ -61,8 +61,7 @@ export default function Dashboard() {
 
 function WelcomeCard({ profile, levelData, mySeasonIndex }: any) {
   return (
-    <Card className="fpc-card overflow-hidden">
-      <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-gold" />
+    <Card className="fpc-card relative overflow-hidden">
       <CardContent className="p-6 flex items-center gap-4 relative">
         <PlayerAvatar avatarId={profile.avatar_url ?? "a1"} name={profile.nickname ?? ""} size={72} />
         <div className="flex-1 min-w-0">
