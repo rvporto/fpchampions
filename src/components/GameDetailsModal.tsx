@@ -20,7 +20,9 @@ import { participantDisplay, gameTotals } from "@/lib/db-types";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X } from "lucide-react";
+import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText } from "lucide-react";
+import { renderAndCapture } from "@/lib/reports";
+import { GameReport } from "@/components/Reports";
 
 interface Props {
   gameId: string | null;
