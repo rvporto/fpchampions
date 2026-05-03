@@ -128,8 +128,8 @@ export default function Ranking() {
                       <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <p className="font-display text-base text-primary">{formatPoints(row.points)}</p>
                       {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                      <p className="font-display text-base text-primary">{formatPoints(row.points)}</p>
                     </div>
                   </div>
                 );
