@@ -20,7 +20,9 @@ import { participantDisplay, gameTotals } from "@/lib/db-types";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X } from "lucide-react";
+import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText } from "lucide-react";
+import { renderAndCapture } from "@/lib/reports";
+import { GameReport } from "@/components/Reports";
 
 interface Props {
   gameId: string | null;
@@ -297,6 +299,12 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setAddOpen((v) => !v)}>
                           <Plus className="size-4 mr-1" /> Adicionar Jogador
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={async () => {
+                          try { await renderAndCapture(<GameReport game={game} />, `${game.name.replace(/\s+/g, "_")}.jpg`); toast.success("Relatório baixado."); }
+                          catch (e: any) { toast.error(e.message); }
+                        }}>
+                          <FileText className="size-4 mr-1" /> Relatório
                         </Button>
                         <Button
                           variant="outline"

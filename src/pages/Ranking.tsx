@@ -2,22 +2,49 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, FileText, Crown, Medal, Loader2 } from "lucide-react";
+import { Trophy, FileText, Crown, Medal, Loader2, RefreshCw } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRanking } from "@/hooks/useRanking";
+import { recalcRankingAndXp } from "@/lib/recalc";
+import { renderAndCapture } from "@/lib/reports";
+import { RankingReport } from "@/components/Reports";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
   const year = new Date().getFullYear();
   const [tab, setTab] = useState<"season" | "month">("season");
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
 
   const list = ranking ?? [];
   const podium = list.slice(0, 3);
+
+  const onRecalc = async () => {
+    setBusy(true);
+    try {
+      const r = await recalcRankingAndXp();
+      await qc.invalidateQueries();
+      toast.success(`Recalculado: ${r.participations} participações, ${r.profiles} perfis.`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const onReport = async () => {
+    if (list.length === 0) return toast.error("Sem dados para o relatório.");
+    const title = tab === "month" ? `Ranking ${MONTHS_PT[month - 1]} ${year}` : `Ranking Temporada ${year}`;
+    setBusy(true);
+    try {
+      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} />, `${title.replace(/\s+/g, "_")}.jpg`);
+      toast.success("Relatório baixado.");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
 
   return (
     <div className="space-y-6">
@@ -26,9 +53,16 @@ export default function Ranking() {
           <h1 className="font-display text-3xl fpc-text-gold">Ranking — Temporada {year}</h1>
           <p className="text-sm text-muted-foreground">Pontuação acumulada por partidas finalizadas.</p>
         </div>
-        <Button onClick={() => toast.success("Relatório gerado (em breve)")} className="bg-gradient-gold text-primary-foreground">
-          <FileText className="size-4 mr-1" />Gerar Relatório
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button variant="outline" onClick={onRecalc} disabled={busy}>
+              <RefreshCw className={`size-4 mr-1 ${busy ? "animate-spin" : ""}`} />Recalcular
+            </Button>
+          )}
+          <Button onClick={onReport} disabled={busy} className="bg-gradient-gold text-primary-foreground">
+            <FileText className="size-4 mr-1" />Gerar Relatório
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
