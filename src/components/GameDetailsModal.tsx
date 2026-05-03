@@ -40,7 +40,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   const deleteGame = useDeleteGame();
 
   // Estado local de inputs por participante
-  type Row = { id: string; entries: number; rebuys: number; position: number | null; ko_points: number };
+  type Row = { id: string; entries: number; rebuys: number; position: number | null; ko_points: number; prize_won: number };
   const [rows, setRows] = useState<Record<string, Row>>({});
   const [rakeAs, setRakeAs] = useState(0);
   const [rakeMonth, setRakeMonth] = useState(0);
@@ -58,6 +58,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
           rebuys: p.rebuys ?? 0,
           position: p.position ?? null,
           ko_points: p.ko_points ?? 0,
+          prize_won: Number((p as any).prize_won ?? 0),
         };
       }
       setRows(map);
@@ -119,6 +120,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
             is_winner: r.position === 1,
             ranking_points: finalize ? breakdown.total : 0,
             total_invested: totalInvested,
+            prize_won: r.prize_won,
             // xp_earned será calculado pela edge function update-ranking depois
           } as any,
         });
@@ -196,6 +198,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                         <th className="text-center px-2">Entries</th>
                         <th className="text-center px-2">Rebuys</th>
                         <th className="text-center px-2">KO</th>
+                        <th className="text-center px-2">Prêmio (R$)</th>
                         <th className="text-right px-2">Pontos</th>
                         {isAdmin && <th className="text-right px-2"></th>}
                       </tr>
@@ -203,7 +206,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                     <tbody>
                       {game.participations.map((p) => {
                         const display = participantDisplay(p);
-                        const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0 };
+                        const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
                         const bd = calcPoints(r);
                         return (
                           <tr key={p.id} className="border-t border-border/40">
@@ -252,6 +255,16 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                                 className="w-16 h-8 text-center"
                               />
                             </td>
+                            <td className="text-center px-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                disabled={!isAdmin}
+                                value={r.prize_won}
+                                onChange={(e) => setRow(p.id, { prize_won: parseFloat(e.target.value || "0") })}
+                                className="w-24 h-8 text-center"
+                              />
+                            </td>
                             <td className="text-right px-2 font-display fpc-text-gold">
                               {r.position ? bd.total : "—"}
                             </td>
@@ -266,7 +279,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                         );
                       })}
                       {game.participations.length === 0 && (
-                        <tr><td colSpan={7} className="text-center text-muted-foreground py-6 text-sm">Sem jogadores.</td></tr>
+                        <tr><td colSpan={8} className="text-center text-muted-foreground py-6 text-sm">Sem jogadores.</td></tr>
                       )}
                     </tbody>
                   </table>
