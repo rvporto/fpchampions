@@ -10,7 +10,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { levelFromXp } from "@/lib/xpSystem";
 import { formatBRL, formatDate, formatPoints, ordinal } from "@/lib/format";
-import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut } from "lucide-react";
+import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut, Award, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
