@@ -34,13 +34,13 @@ export function useLinkRequests(status: LinkRequestStatus | "all" = "pending") {
       const [{ data: profs }, { data: temps }] = await Promise.all([
         userIds.length
           ? supabase.from("profiles").select("id, nickname, avatar_url").in("id", userIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Pick<DbProfile, "id" | "nickname" | "avatar_url">[] }),
         tempIds.length
           ? supabase.from("temporary_players").select("id, nickname, avatar_url").in("id", tempIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[] }),
       ]);
-      const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      const tm = new Map((temps ?? []).map((p: any) => [p.id, p]));
+      const pm = new Map(((profs ?? []) as Pick<DbProfile, "id" | "nickname" | "avatar_url">[]).map((p) => [p.id, p]));
+      const tm = new Map(((temps ?? []) as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[]).map((p) => [p.id, p]));
       return rows.map((r) => ({
         ...r,
         profile: pm.get(r.user_id) ?? null,
