@@ -73,7 +73,7 @@ export function RankingReport({
               </div>
               <div style={{ marginTop: 8, fontWeight: 700 }}>
                 {row.nickname}
-                {!row.isTemp && row.level && <span style={levelBadge}>Nv {row.level}</span>}
+                {!row.isTemp && row.level && <span style={levelBadge}>{row.level}</span>}
               </div>
               <div style={{ ...goldText, fontSize: 22, marginTop: 4 }}>{formatPoints(row.points)} pts</div>
             </div>
@@ -96,7 +96,7 @@ export function RankingReport({
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>
                   {r.nickname}
-                  {!r.isTemp && r.level && <span style={levelBadge}>Nv {r.level}</span>}
+                  {!r.isTemp && r.level && <span style={levelBadge}>{r.level}</span>}
                   {r.isTemp && <span style={{ marginLeft: 8, fontSize: 10, color: "#999", textTransform: "uppercase" }}>temp</span>}
                 </div>
                 <div style={{ fontSize: 11, color: "#888" }}>{r.games} partidas · {r.wins} vitórias</div>
@@ -159,7 +159,7 @@ export function GameReport({ game }: { game: GameWithParticipants }) {
                 <PlayerAvatar avatarId={d.avatarId} name={d.nickname} size={28} />
                 <span>
                   {d.nickname}
-                  {!d.isTemp && (p as any).profile?.level && <span style={levelBadge}>Nv {(p as any).profile.level}</span>}
+                  {!d.isTemp && (p as any).profile?.level && <span style={levelBadge}>{(p as any).profile.level}</span>}
                 </span>
               </div>
               <div style={{ textAlign: "center" }}>{p.entries}</div>
