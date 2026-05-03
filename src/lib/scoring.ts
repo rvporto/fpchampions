@@ -64,11 +64,9 @@ export function getFM(totalActions: number): number {
   return 2.0;
 }
 
-// Arredondamento conforme regulamento: fração 0.1–0.5 desce, 0.6–0.9 sobe
+// Preserva a primeira casa decimal (ex.: 5.6)
 function customRound(v: number): number {
-  const floor = Math.floor(v);
-  const frac = v - floor;
-  return frac >= 0.6 ? floor + 1 : floor;
+  return Math.round(v * 10) / 10;
 }
 
 export interface ScoringInput {
