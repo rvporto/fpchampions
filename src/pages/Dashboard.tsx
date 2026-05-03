@@ -168,10 +168,11 @@ function RankRow({ idx, row, highlight, you }: { idx: number; row: RankingRow; h
       <span className={`font-display text-lg w-8 text-center ${medal}`}>{idx}º</span>
       <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={36} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm break-words line-clamp-2">
-          {row.nickname}
-          {row.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}
-          {you && <span className="text-primary text-xs ml-1">— Você</span>}
+        <p className="font-medium text-sm break-words line-clamp-2 flex items-center gap-2 flex-wrap">
+          <span>{row.nickname}</span>
+          {!row.isTemp && <LevelBadge level={row.level} />}
+          {row.isTemp && <span className="text-[10px] uppercase text-muted-foreground">temp</span>}
+          {you && <span className="text-primary text-xs">— Você</span>}
         </p>
         <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
       </div>
