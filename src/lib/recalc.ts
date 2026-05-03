@@ -4,6 +4,10 @@ import { xpForGame } from "@/lib/xpSystem";
 import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import type { DbGame, DbParticipation } from "@/lib/db-types";
 
+type MonthlyChampionRow = { champion_user_id: string | null };
+type SeasonChampionRow = { k_user_id: string | null; as_user_id: string | null };
+type ProfileIdRow = { id: string };
+
 /**
  * Recalcula ranking_points e xp_earned de todas as partidas finalizadas
  * + atualiza profiles.xp e profiles.level a partir do somatório.
@@ -79,12 +83,11 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
   if (monthsError) console.warn("monthly achievements ignored", monthsError);
   if (seasonsError) console.warn("season achievements ignored", seasonsError);
   for (const row of months ?? []) {
-    const userId = (row as any).champion_user_id as string | null;
+    const userId = (row as MonthlyChampionRow).champion_user_id;
     if (userId) monthsByUser.set(userId, (monthsByUser.get(userId) || 0) + 1);
   }
   for (const row of seasons ?? []) {
-    const kUserId = (row as any).k_user_id as string | null;
-    const asUserId = (row as any).as_user_id as string | null;
+    const { k_user_id: kUserId, as_user_id: asUserId } = row as SeasonChampionRow;
     if (kUserId) kByUser.set(kUserId, (kByUser.get(kUserId) || 0) + 1);
     if (asUserId) asByUser.set(asUserId, (asByUser.get(asUserId) || 0) + 1);
   }
@@ -100,7 +103,7 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
   // atualiza profiles.xp, level e ranking com XP de partidas + conquistas, inclusive histórico já existente
   let updatedProfiles = 0;
   for (const profile of profiles ?? []) {
-    const userId = (profile as any).id as string;
+    const userId = (profile as ProfileIdRow).id;
     const achievements = computeAchievements({
       history: historyByUser.get(userId) ?? [],
       monthsWon: monthsByUser.get(userId) ?? 0,
