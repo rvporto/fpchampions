@@ -21,6 +21,7 @@ export default function Ranking() {
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
+  const { data: deltaMap } = useSeasonRankingDelta(year);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
 
