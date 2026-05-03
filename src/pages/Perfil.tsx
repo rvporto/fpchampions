@@ -10,7 +10,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { levelFromXp } from "@/lib/xpSystem";
 import { formatBRL, formatDate, formatPoints, ordinal } from "@/lib/format";
-import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut } from "lucide-react";
+import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut, Award, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
@@ -68,11 +68,12 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={Target} label="Partidas" value={stats?.games ?? 0} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard icon={Target} label="Partidas Jogadas" value={stats?.games ?? 0} />
         <StatCard icon={Trophy} label="Vitórias" value={stats?.wins ?? 0} />
-        <StatCard icon={Sparkles} label="Pontos" value={formatPoints(stats?.points ?? 0)} />
-        <StatCard icon={Coins} label="Prêmios" value={formatBRL(Number((profile as any).lifetime_winnings || 0))} />
+        <StatCard icon={Award} label="Pódios" value={stats?.podiums ?? 0} />
+        <StatCard icon={Coins} label="Entradas (BI+RB)" value={(stats?.entries ?? 0) + (stats?.rebuys ?? 0)} />
+        <StatCard icon={Swords} label="KOs" value={stats?.ko ?? 0} />
       </div>
 
       <Card className="fpc-card">

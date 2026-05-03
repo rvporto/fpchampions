@@ -2,12 +2,14 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { formatPoints } from "@/lib/format";
+import { formatPoints, formatBRL } from "@/lib/format";
 import { useGames } from "@/hooks/useGames";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
+
+type SortKey = "nickname" | "games" | "wins" | "kos" | "entriesTotal" | "points" | "avg" | "prize" | "invested" | "profit";
 
 interface Stat {
   key: string;
@@ -21,6 +23,8 @@ interface Stat {
   kos: number;
   entries: number;
   rebuys: number;
+  prize: number;
+  invested: number;
 }
 
 export default function Estatisticas() {
@@ -70,11 +74,11 @@ export default function Estatisticas() {
       const isTemp = !!p.temp_player_id;
       const key = isTemp ? `t:${p.temp_player_id}` : `u:${p.user_id}`;
       const m: any = isTemp ? meta.temp.get(p.temp_player_id!) : meta.prof.get(p.user_id!);
-      const cur = map.get(key) ?? {
+      const cur: Stat = map.get(key) ?? {
         key, id: (p.user_id ?? p.temp_player_id) as string, isTemp,
         nickname: m?.nickname ?? p.snapshot_nickname ?? "Jogador",
         avatarId: m?.avatar_url ?? p.snapshot_avatar_url ?? "a1",
-        games: 0, wins: 0, points: 0, kos: 0, entries: 0, rebuys: 0,
+        games: 0, wins: 0, points: 0, kos: 0, entries: 0, rebuys: 0, prize: 0, invested: 0,
       };
       cur.games += 1;
       if (p.position === 1) cur.wins += 1;
@@ -82,10 +86,58 @@ export default function Estatisticas() {
       cur.kos += Number(p.ko_points || 0);
       cur.entries += Number(p.entries || 0);
       cur.rebuys += Number(p.rebuys || 0);
+      cur.prize += Number((p as any).prize_won || 0);
+      cur.invested += Number(p.total_invested || 0);
       map.set(key, cur);
     }
-    return [...map.values()].sort((a, b) => b.points - a.points);
+    return [...map.values()];
   }, [parts, meta]);
+
+  const [sortKey, setSortKey] = useState<SortKey>("points");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const sorted = useMemo(() => {
+    const arr = [...stats];
+    const getter = (s: Stat): number | string => {
+      switch (sortKey) {
+        case "nickname": return s.nickname.toLowerCase();
+        case "games": return s.games;
+        case "wins": return s.wins;
+        case "kos": return s.kos;
+        case "entriesTotal": return s.entries + s.rebuys;
+        case "points": return s.points;
+        case "avg": return s.games ? s.points / s.games : 0;
+        case "prize": return s.prize;
+        case "invested": return s.invested;
+        case "profit": return s.prize - s.invested;
+      }
+    };
+    arr.sort((a, b) => {
+      const va = getter(a), vb = getter(b);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [stats, sortKey, sortDir]);
+
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir(k === "nickname" ? "asc" : "desc"); }
+  };
+
+  const SortTh = ({ k, label, align = "right" }: { k: SortKey; label: string; align?: "left" | "right" }) => (
+    <th className={`py-2 px-2 ${align === "right" ? "text-right" : "text-left"} select-none`}>
+      <button
+        type="button"
+        onClick={() => toggleSort(k)}
+        className={`inline-flex items-center gap-1 hover:text-primary transition ${sortKey === k ? "text-primary" : ""}`}
+      >
+        {label}
+        {sortKey === k && (sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}
+      </button>
+    </th>
+  );
 
   return (
     <div className="space-y-6">
@@ -102,36 +154,46 @@ export default function Estatisticas() {
             <table className="w-full text-sm">
               <thead className="text-xs uppercase text-muted-foreground border-b border-border">
                 <tr>
-                  <th className="text-left py-2 px-2">Jogador</th>
-                  <th className="text-right py-2 px-2">Partidas</th>
-                  <th className="text-right py-2 px-2">Vitórias</th>
-                  <th className="text-right py-2 px-2">KOs</th>
-                  <th className="text-right py-2 px-2">Entradas</th>
-                  <th className="text-right py-2 px-2">Rebuys</th>
-                  <th className="text-right py-2 px-2">Pontos</th>
-                  <th className="text-right py-2 px-2">Média</th>
+                  <SortTh k="nickname" label="Jogador" align="left" />
+                  <SortTh k="games" label="Partidas" />
+                  <SortTh k="wins" label="Vitórias" />
+                  <SortTh k="kos" label="KOs" />
+                  <SortTh k="entriesTotal" label="Entradas" />
+                  <SortTh k="points" label="Pontos" />
+                  <SortTh k="avg" label="Média" />
+                  <SortTh k="prize" label="Prêmio" />
+                  <SortTh k="invested" label="Investido" />
+                  <SortTh k="profit" label="Lucro" />
                 </tr>
               </thead>
               <tbody>
-                {stats.map((s) => (
-                  <tr key={s.key} className="border-b border-border/40">
-                    <td className="py-2 px-2">
-                      <div className="flex items-center gap-2">
-                        <PlayerAvatar avatarId={s.avatarId} name={s.nickname} size={28} />
-                        <span className="break-words line-clamp-2">{s.nickname}{s.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}</span>
-                      </div>
-                    </td>
-                    <td className="text-right px-2">{s.games}</td>
-                    <td className="text-right px-2">{s.wins}</td>
-                    <td className="text-right px-2">{s.kos}</td>
-                    <td className="text-right px-2">{s.entries}</td>
-                    <td className="text-right px-2">{s.rebuys}</td>
-                    <td className="text-right px-2 text-primary font-display">{formatPoints(s.points)}</td>
-                    <td className="text-right px-2">{formatPoints(s.games ? Math.round(s.points / s.games) : 0)}</td>
-                  </tr>
-                ))}
-                {stats.length === 0 && (
-                  <tr><td colSpan={8} className="text-center text-muted-foreground py-8 text-sm">Sem partidas finalizadas nesta temporada.</td></tr>
+                {sorted.map((s) => {
+                  const profit = s.prize - s.invested;
+                  return (
+                    <tr key={s.key} className="border-b border-border/40">
+                      <td className="py-2 px-2">
+                        <div className="flex items-center gap-2">
+                          <PlayerAvatar avatarId={s.avatarId} name={s.nickname} size={28} />
+                          <span className="break-words line-clamp-2">{s.nickname}{s.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}</span>
+                        </div>
+                      </td>
+                      <td className="text-right px-2">{s.games}</td>
+                      <td className="text-right px-2">{s.wins}</td>
+                      <td className="text-right px-2">{s.kos}</td>
+                      <td className="text-right px-2">
+                        <div className="font-medium">{s.entries + s.rebuys}</div>
+                        <div className="text-[10px] text-muted-foreground">{s.entries} BI · {s.rebuys} RB</div>
+                      </td>
+                      <td className="text-right px-2 text-primary font-display">{formatPoints(s.points)}</td>
+                      <td className="text-right px-2">{formatPoints(s.games ? Math.round(s.points / s.games) : 0)}</td>
+                      <td className="text-right px-2">{formatBRL(s.prize)}</td>
+                      <td className="text-right px-2">{formatBRL(s.invested)}</td>
+                      <td className={`text-right px-2 font-medium ${profit > 0 ? "text-success" : profit < 0 ? "text-destructive" : ""}`}>{formatBRL(profit)}</td>
+                    </tr>
+                  );
+                })}
+                {sorted.length === 0 && (
+                  <tr><td colSpan={10} className="text-center text-muted-foreground py-8 text-sm">Sem partidas finalizadas nesta temporada.</td></tr>
                 )}
               </tbody>
             </table>

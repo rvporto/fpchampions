@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Trophy, Flame, Target, TrendingUp, Crown, ChevronRight, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Trophy, Flame, Target, TrendingUp, Crown, ChevronRight, FileText, Sparkles, Loader2, Award, Swords } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -23,7 +23,7 @@ export default function Dashboard() {
   const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month });
   const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
   const { data: games = [] } = useGames();
-  const { data: stats } = usePlayerStats(user?.id);
+  const { data: stats } = usePlayerStats(user?.id, year);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
   if (!profile) return <Navigate to="/complete-profile" replace />;
@@ -39,6 +39,8 @@ export default function Dashboard() {
       <StatsGrid
         games={stats?.games ?? 0}
         wins={stats?.wins ?? 0}
+        podiums={stats?.podiums ?? 0}
+        ko={stats?.ko ?? 0}
         points={stats?.points ?? 0}
         position={mySeasonIndex >= 0 ? mySeasonIndex + 1 : null}
       />
@@ -81,15 +83,17 @@ function WelcomeCard({ profile, levelData, mySeasonIndex }: any) {
   );
 }
 
-function StatsGrid({ games, wins, points, position }: { games: number; wins: number; points: number; position: number | null }) {
+function StatsGrid({ games, wins, podiums, ko, points, position }: { games: number; wins: number; podiums: number; ko: number; points: number; position: number | null }) {
   const items = [
+    { label: "Posição", value: position ? ordinal(position) : "—", icon: TrendingUp, color: "text-tournament" },
+    { label: "Pontos", value: formatPoints(points), icon: Sparkles, color: "text-primary-glow" },
     { label: "Partidas", value: games, icon: Target, color: "text-primary" },
     { label: "Vitórias", value: wins, icon: Trophy, color: "text-warning" },
-    { label: "Pontos", value: formatPoints(points), icon: Sparkles, color: "text-primary-glow" },
-    { label: "Posição", value: position ? ordinal(position) : "—", icon: TrendingUp, color: "text-tournament" },
+    { label: "Pódios", value: podiums, icon: Award, color: "text-warning" },
+    { label: "KOs", value: ko, icon: Swords, color: "text-tournament" },
   ];
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {items.map((s) => (
         <Card key={s.label} className="fpc-card fpc-hover-gold">
           <CardContent className="p-4">
