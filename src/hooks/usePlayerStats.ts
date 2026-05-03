@@ -34,7 +34,7 @@ export function usePlayerStats(userId: string | null | undefined, seasonYear?: n
       if (error) throw error;
       const list = (parts ?? []) as DbParticipation[];
       const ids = [...new Set(list.map((p) => p.game_id))];
-      if (!ids.length) return { games: 0, wins: 0, podiums: 0, points: 0, ko: 0, invested: 0, history: [] };
+      if (!ids.length) return empty();
       const { data: games, error: e2 } = await supabase
         .from("games")
         .select("*")
@@ -42,7 +42,12 @@ export function usePlayerStats(userId: string | null | undefined, seasonYear?: n
       if (e2) throw e2;
       const gMap = new Map((games ?? []).map((g: any) => [g.id, g as DbGame]));
 
-      const finished = list.filter((p) => gMap.get(p.game_id)?.status === "finished");
+      const finished = list.filter((p) => {
+        const g = gMap.get(p.game_id);
+        if (!g || g.status !== "finished") return false;
+        if (seasonYear && g.season_year !== seasonYear) return false;
+        return true;
+      });
       const history: PlayerGameRow[] = finished
         .map((p) => ({ participation: p, game: gMap.get(p.game_id)! }))
         .sort((a, b) => +new Date(b.game.date) - +new Date(a.game.date));
@@ -54,6 +59,8 @@ export function usePlayerStats(userId: string | null | undefined, seasonYear?: n
         points: finished.reduce((s, p) => s + Number(p.ranking_points || 0), 0),
         ko: finished.reduce((s, p) => s + Number(p.ko_points || 0), 0),
         invested: finished.reduce((s, p) => s + Number(p.total_invested || 0), 0),
+        entries: finished.reduce((s, p) => s + Number(p.entries || 0), 0),
+        rebuys: finished.reduce((s, p) => s + Number(p.rebuys || 0), 0),
         history,
       };
     },
