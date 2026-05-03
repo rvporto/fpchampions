@@ -22,7 +22,18 @@ import { useMemo } from "react";
 export default function Perfil() {
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const { data: stats, isLoading: statsLoading } = usePlayerStats(user?.id);
+  const { data: champions = [] } = useSeasonChampions();
+  const year = new Date().getFullYear();
+  const { data: monthly = [] } = useMonthlyRankings(year);
   const [editing, setEditing] = useState(false);
+
+  const achievements = useMemo(() => {
+    if (!user || !stats) return [];
+    const monthsWon = monthly.filter((m) => m.champion_user_id === user.id).length;
+    const asTitles = champions.filter((c) => c.as_user_id === user.id).length;
+    const kTitles = champions.filter((c) => c.k_user_id === user.id).length;
+    return computeAchievements({ history: stats.history, monthsWon, asTitles, kTitles });
+  }, [user, stats, champions, monthly]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
   if (!user) return <Navigate to="/auth" replace />;
