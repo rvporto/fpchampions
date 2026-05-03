@@ -29,14 +29,8 @@ export default function Dashboard() {
   const { data: lifetimeStats } = usePlayerStats(user?.id);
   const { data: champions = [] } = useSeasonChampions();
   const { data: monthly = [] } = useAllMonthlyRankings();
-
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
-  if (!profile) return <Navigate to="/complete-profile" replace />;
-
-  const myMonthIndex = monthlyRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
-  const mySeasonIndex = seasonRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
   const computedXp = useMemo(() => {
-    if (!user || !lifetimeStats) return profile.xp ?? 0;
+    if (!user || !lifetimeStats) return profile?.xp ?? 0;
     const achievements = computeAchievements({
       history: lifetimeStats.history,
       monthsWon: monthly.filter((m) => m.champion_user_id === user.id).length,
@@ -44,7 +38,13 @@ export default function Dashboard() {
       kTitles: champions.filter((c) => c.k_user_id === user.id).length,
     });
     return lifetimeStats.xp + totalAchievementXp(achievements);
-  }, [user, profile.xp, lifetimeStats, champions, monthly]);
+  }, [user, profile?.xp, lifetimeStats, champions, monthly]);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
+  if (!profile) return <Navigate to="/complete-profile" replace />;
+
+  const myMonthIndex = monthlyRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
+  const mySeasonIndex = seasonRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
   const lvl = levelFromXp(computedXp);
   const recentGames = games.filter((g) => g.status === "finished").slice(0, 3);
 
