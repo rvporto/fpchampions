@@ -1,4 +1,4 @@
-// Tipos do banco (Supabase). Mantenha sincronizado com as migrations.
+// Tipos do banco (Supabase). Mantenha sincronizado com 0001_init.sql.
 
 export type GameStatus = "scheduled" | "in_progress" | "finished";
 
@@ -40,8 +40,6 @@ export interface DbGame {
   total_pot: number;
   prize_pool: number;
   status: GameStatus;
-  total_players: number;
-  total_actions: number;
   description: string | null;
   created_at: string;
 }
@@ -51,8 +49,8 @@ export interface DbParticipation {
   game_id: string;
   user_id: string | null;
   temp_player_id: string | null;
-  nickname_snapshot: string | null;
-  avatar_snapshot: string | null;
+  snapshot_nickname: string | null;
+  snapshot_avatar_url: string | null;
   entries: number;
   rebuys: number;
   total_invested: number;
@@ -63,7 +61,6 @@ export interface DbParticipation {
   xp_earned: number;
 }
 
-// Forma rica usada no cliente (game + participantes resolvidos)
 export interface GameWithParticipants extends DbGame {
   participations: (DbParticipation & {
     profile?: DbProfile | null;
@@ -71,9 +68,20 @@ export interface GameWithParticipants extends DbGame {
   })[];
 }
 
-// Helpers de display
-export function participantDisplay(p: { profile?: DbProfile | null; temp_player?: DbTempPlayer | null; nickname_snapshot?: string | null; avatar_snapshot?: string | null }) {
+export function participantDisplay(p: {
+  profile?: DbProfile | null;
+  temp_player?: DbTempPlayer | null;
+  snapshot_nickname?: string | null;
+  snapshot_avatar_url?: string | null;
+}) {
   if (p.profile) return { nickname: p.profile.nickname ?? "Sem apelido", avatarId: p.profile.avatar_url ?? "a1", isTemp: false };
   if (p.temp_player) return { nickname: p.temp_player.nickname, avatarId: p.temp_player.avatar_url ?? "a1", isTemp: true };
-  return { nickname: p.nickname_snapshot ?? "Jogador", avatarId: p.avatar_snapshot ?? "a1", isTemp: false };
+  return { nickname: p.snapshot_nickname ?? "Jogador", avatarId: p.snapshot_avatar_url ?? "a1", isTemp: false };
+}
+
+// Total de ações = soma de entries+rebuys; total de jogadores = participations.length
+export function gameTotals(parts: { entries: number; rebuys: number }[]) {
+  const totalPlayers = parts.length;
+  const totalActions = parts.reduce((s, p) => s + (p.entries || 0) + (p.rebuys || 0), 0);
+  return { totalPlayers, totalActions };
 }
