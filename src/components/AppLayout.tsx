@@ -40,22 +40,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 function DesktopHeader({ isAdmin, isLogged, onSignOut }: { isAdmin: boolean; isLogged: boolean; onSignOut: () => void }) {
   return (
     <header className="hidden md:block sticky top-0 z-40 glass-effect">
-      <div className="container max-w-6xl h-16 grid grid-cols-[auto_1fr_auto_auto] items-center gap-4">
-        <Link to="/"><Logo withText={false} /></Link>
-        <Link to="/" className="justify-self-center leading-tight text-center">
-          <div className="font-display text-base sm:text-lg fpc-text-gold">Família Poker</div>
-          <div className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-muted-foreground">Champions</div>
+      <div className="container max-w-6xl h-20 flex items-center gap-4">
+        <Link to="/" className="shrink-0">
+          <Logo size={56} />
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav className="flex-1 flex items-center justify-center gap-1 lg:gap-1.5">
           {navItems.filter((i) => i.public || isLogged).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
           {isAdmin && adminItems.map((item) => <NavItem key={item.to} {...item} admin />)}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isAdmin && <Badge className="bg-gradient-gold text-primary-foreground border-0"><Crown className="size-3 mr-1" />Admin</Badge>}
           {isLogged ? (
-            <Button variant="ghost" size="sm" onClick={onSignOut} className="text-muted-foreground hover:text-primary"><LogOut className="size-4 mr-1" />Sair</Button>
+            <Button variant="ghost" size="sm" onClick={onSignOut} className="text-muted-foreground hover:bg-secondary hover:text-foreground"><LogOut className="size-4 mr-1" />Sair</Button>
           ) : (
             <Link to="/auth"><Button size="sm" className="bg-gradient-gold text-primary-foreground"><LogIn className="size-4 mr-1" />Entrar</Button></Link>
           )}
@@ -72,13 +70,13 @@ function NavItem({ to, label, icon: Icon, admin }: { to: string; label: string; 
       end={to === "/"}
       className={({ isActive }) =>
         cn(
-          "px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all",
+          "px-2.5 py-2 rounded-lg text-[13px] lg:text-sm font-medium flex items-center gap-1.5 whitespace-nowrap transition-all",
           isActive ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
           admin && "border border-primary/20"
         )
       }
     >
-      <Icon className="size-4" />
+      <Icon className="size-4 shrink-0" />
       {label}
     </NavLink>
   );
