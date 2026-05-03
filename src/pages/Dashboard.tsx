@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRanking, type RankingRow } from "@/hooks/useRanking";
 import { useGames } from "@/hooks/useGames";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
+import { useAllMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -24,13 +26,27 @@ export default function Dashboard() {
   const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
   const { data: games = [] } = useGames();
   const { data: stats } = usePlayerStats(user?.id, year);
+  const { data: lifetimeStats } = usePlayerStats(user?.id);
+  const { data: champions = [] } = useSeasonChampions();
+  const { data: monthly = [] } = useAllMonthlyRankings();
+  const computedXp = useMemo(() => {
+    if (!user || !lifetimeStats) return profile?.xp ?? 0;
+    const achievements = computeAchievements({
+      history: lifetimeStats.history,
+      monthsWon: monthly.filter((m) => m.champion_user_id === user.id).length,
+      asTitles: champions.filter((c) => c.as_user_id === user.id).length,
+      kTitles: champions.filter((c) => c.k_user_id === user.id).length,
+    });
+    const xp = lifetimeStats.xp + totalAchievementXp(achievements);
+    return xp || profile?.xp || 0;
+  }, [user, profile?.xp, lifetimeStats, champions, monthly]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
   if (!profile) return <Navigate to="/complete-profile" replace />;
 
   const myMonthIndex = monthlyRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
   const mySeasonIndex = seasonRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
-  const lvl = levelFromXp(profile.xp ?? 0);
+  const lvl = levelFromXp(computedXp);
   const recentGames = games.filter((g) => g.status === "finished").slice(0, 3);
 
   return (

@@ -16,15 +16,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { supabase } from "@/integrations/supabase/client";
 import { computeAchievements } from "@/lib/achievements";
-import { useSeasonChampions, useMonthlyRankings } from "@/hooks/useFinance";
+import { useSeasonChampions, useAllMonthlyRankings } from "@/hooks/useFinance";
 import { useMemo } from "react";
 
 export default function Perfil() {
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const { data: stats, isLoading: statsLoading } = usePlayerStats(user?.id);
   const { data: champions = [] } = useSeasonChampions();
-  const year = new Date().getFullYear();
-  const { data: monthly = [] } = useMonthlyRankings(year);
+  const { data: monthly = [] } = useAllMonthlyRankings();
   const [editing, setEditing] = useState(false);
 
   const achievements = useMemo(() => {
@@ -39,7 +38,9 @@ export default function Perfil() {
   if (!user) return <Navigate to="/auth" replace />;
   if (!profile) return <Navigate to="/complete-profile" replace />;
 
-  const lvl = levelFromXp(profile.xp ?? 0);
+  const computedXp = (stats?.xp ?? 0) + achievements.reduce((s, a) => s + a.count * a.def.xpReward, 0);
+  const displayXp = computedXp || profile.xp || 0;
+  const lvl = levelFromXp(displayXp);
 
   return (
     <div className="space-y-6">
@@ -51,12 +52,12 @@ export default function Perfil() {
             <p className="text-muted-foreground break-words">{profile.full_name}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="fpc-chip">Nível {lvl.level}</span>
-              <span className="fpc-chip">{formatPoints(profile.xp ?? 0)} XP</span>
+              <span className="fpc-chip">{formatPoints(displayXp)} XP</span>
               {profile.current_rank && <span className="fpc-chip">{ordinal(profile.current_rank)} no ranking</span>}
             </div>
             <div className="mt-3">
               <Progress value={lvl.progress * 100} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">{formatPoints(lvl.xpInLevel)} / 1000 XP</p>
+              <p className="text-xs text-muted-foreground mt-1">{formatPoints(lvl.xpInLevel)} / 1000 XP — faltam {formatPoints(lvl.xpToNext)} para o nível {lvl.level + 1}</p>
             </div>
           </div>
           <div className="flex flex-col gap-2">
@@ -87,6 +88,7 @@ export default function Perfil() {
               </div>
               <p className="font-medium text-sm mt-1 break-words">{a.def.name}</p>
               <p className="text-[10px] text-muted-foreground break-words line-clamp-2">{a.def.description}</p>
+              <p className="text-[10px] text-primary mt-1">+{formatPoints(a.def.xpReward)} XP</p>
             </div>
           ))}
         </CardContent>
