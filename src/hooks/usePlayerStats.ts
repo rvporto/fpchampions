@@ -14,15 +14,19 @@ export interface PlayerStats {
   points: number;
   ko: number;
   invested: number;
+  entries: number;
+  rebuys: number;
   history: PlayerGameRow[];
 }
 
-export function usePlayerStats(userId: string | null | undefined) {
+const empty = (): PlayerStats => ({ games: 0, wins: 0, podiums: 0, points: 0, ko: 0, invested: 0, entries: 0, rebuys: 0, history: [] });
+
+export function usePlayerStats(userId: string | null | undefined, seasonYear?: number) {
   return useQuery({
-    queryKey: ["player-stats", userId],
+    queryKey: ["player-stats", userId, seasonYear ?? "all"],
     enabled: !!userId,
     queryFn: async (): Promise<PlayerStats> => {
-      if (!userId) return { games: 0, wins: 0, podiums: 0, points: 0, ko: 0, invested: 0, history: [] };
+      if (!userId) return empty();
       const { data: parts, error } = await supabase
         .from("game_participations")
         .select("*")
