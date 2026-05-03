@@ -15,7 +15,8 @@ export interface HallEntry {
 export interface HallData {
   rounds: HallEntry[]; // vencedores de partidas (acumulado)
   months: HallEntry[]; // meses vencidos
-  yearChampions: HallEntry[]; // campeão de cada temporada
+  yearChampions: HallEntry[]; // K do Poker (oficial via season_champions, fallback agregação)
+  asChampions: HallEntry[]; // Ás do Poker (indicado pelo admin)
 }
 
 export function useHallOfFame() {
