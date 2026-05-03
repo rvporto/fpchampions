@@ -11,6 +11,7 @@ import { useRanking } from "@/hooks/useRanking";
 import { recalcRankingAndXp } from "@/lib/recalc";
 import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
+import { LinkTempPlayerDialog } from "@/components/LinkTempPlayerDialog";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
@@ -126,7 +127,10 @@ export default function Ranking() {
                       </p>
                       <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
                     </div>
-                    <p className="font-display text-base text-primary">{formatPoints(row.points)}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="font-display text-base text-primary">{formatPoints(row.points)}</p>
+                      {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                    </div>
                   </div>
                 );
               })}
