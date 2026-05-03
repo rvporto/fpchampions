@@ -40,7 +40,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 function DesktopHeader({ isAdmin, isLogged, onSignOut }: { isAdmin: boolean; isLogged: boolean; onSignOut: () => void }) {
   return (
     <header className="hidden md:block sticky top-0 z-40 glass-effect">
-      <div className="container max-w-6xl h-16 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+      <div className="container max-w-6xl h-16 grid grid-cols-[auto_1fr_auto_auto] items-center gap-4">
         <Link to="/"><Logo withText={false} /></Link>
         <Link to="/" className="justify-self-center leading-tight text-center">
           <div className="font-display text-base sm:text-lg fpc-text-gold">Família Poker</div>
