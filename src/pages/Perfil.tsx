@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { supabase } from "@/integrations/supabase/client";
+import { computeAchievements } from "@/lib/achievements";
+import { useSeasonChampions, useMonthlyRankings } from "@/hooks/useFinance";
+import { useMemo } from "react";
 
 export default function Perfil() {
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
