@@ -37,7 +37,8 @@ export default function Dashboard() {
       asTitles: champions.filter((c) => c.as_user_id === user.id).length,
       kTitles: champions.filter((c) => c.k_user_id === user.id).length,
     });
-    return lifetimeStats.xp + totalAchievementXp(achievements);
+    const xp = lifetimeStats.xp + totalAchievementXp(achievements);
+    return xp || profile?.xp || 0;
   }, [user, profile?.xp, lifetimeStats, champions, monthly]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
