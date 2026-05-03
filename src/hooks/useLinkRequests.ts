@@ -105,3 +105,31 @@ export function useRejectLinkRequest() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["link_requests"] }),
   });
 }
+
+// Admin: vincula diretamente um temp_player a um user e apaga o temp
+export function useMergeTempIntoUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { user_id: string; temp_player_id: string }) => {
+      const { error: e1 } = await supabase
+        .from("game_participations")
+        .update({ user_id: input.user_id, temp_player_id: null })
+        .eq("temp_player_id", input.temp_player_id);
+      if (e1) throw e1;
+      // marca quaisquer link_requests deste temp como aprovadas
+      await supabase
+        .from("link_requests")
+        .update({ status: "approved", reviewed_at: new Date().toISOString() })
+        .eq("temp_player_id", input.temp_player_id)
+        .eq("status", "pending");
+      const { error: e3 } = await supabase
+        .from("temporary_players")
+        .delete()
+        .eq("id", input.temp_player_id);
+      if (e3) throw e3;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries();
+    },
+  });
+}

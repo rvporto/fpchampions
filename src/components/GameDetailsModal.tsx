@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText } from "lucide-react";
 import { renderAndCapture } from "@/lib/reports";
 import { GameReport } from "@/components/Reports";
+import { recalcRankingAndXp } from "@/lib/recalc";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   gameId: string | null;
@@ -38,6 +40,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   const addParts = useAddParticipations();
   const removePart = useRemoveParticipation();
   const deleteGame = useDeleteGame();
+  const qc = useQueryClient();
 
   // Estado local de inputs por participante
   type Row = { id: string; entries: number; rebuys: number; position: number | null; ko_points: number; prize_won: number };
@@ -125,7 +128,15 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
           } as any,
         });
       }
-      toast.success(finalize ? "Partida finalizada!" : "Alterações salvas.");
+      if (finalize) {
+        try {
+          await recalcRankingAndXp();
+          await qc.invalidateQueries();
+        } catch (e: any) {
+          console.error("recalc failed", e);
+        }
+      }
+      toast.success(finalize ? "Partida finalizada! XP e ranking atualizados." : "Alterações salvas.");
       if (finalize) onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao salvar.");
