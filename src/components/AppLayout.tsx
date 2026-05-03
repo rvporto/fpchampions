@@ -82,54 +82,38 @@ function NavItem({ to, label, icon: Icon, admin }: { to: string; label: string; 
 
 function MobileHeader({ isAdmin, isLogged, onSignOut }: { isAdmin: boolean; isLogged: boolean; onSignOut: () => void }) {
   const loc = useLocation();
-  const [hidden, setHidden] = useState(false);
-  const [lastY, setLastY] = useState(0);
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [loc.pathname]);
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      setHidden(y > 80 && y > lastY);
-      setLastY(y);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [lastY]);
   return (
-    <header className={cn("md:hidden sticky top-0 z-40 glass-effect transition-transform", hidden && "-translate-y-full")}>
-      <div className="h-16 px-4 flex items-center justify-between">
-        <Link to="/"><Logo size={36} /></Link>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <button
-              aria-label="Abrir menu"
-              className="size-10 rounded-lg border border-primary/40 bg-secondary/40 flex items-center justify-center text-primary active:scale-95 transition-transform"
-            >
-              <Menu className="size-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[85%] max-w-sm bg-card border-border">
-            <div className="mt-2 mb-6"><Logo /></div>
-            <nav className="flex flex-col gap-1">
-              {navItems.filter((i) => i.public || isLogged).map((i) => <NavItem key={i.to} {...i} />)}
-              {isAdmin && (
-                <>
-                  <div className="fpc-divider my-3" />
-                  <p className="px-3 text-xs uppercase tracking-wider text-muted-foreground mb-1">Administração</p>
-                  {adminItems.map((i) => <NavItem key={i.to} {...i} admin />)}
-                </>
-              )}
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          aria-label="Abrir menu"
+          className="md:hidden fixed top-4 right-4 z-50 size-12 rounded-full bg-gradient-gold shadow-gold flex items-center justify-center text-primary-foreground active:scale-95 transition-transform ring-2 ring-primary/40"
+        >
+          <Menu className="size-6" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[85%] max-w-sm bg-card border-border">
+        <div className="mt-2 mb-6"><Logo /></div>
+        <nav className="flex flex-col gap-1">
+          {navItems.filter((i) => i.public || isLogged).map((i) => <NavItem key={i.to} {...i} />)}
+          {isAdmin && (
+            <>
               <div className="fpc-divider my-3" />
-              {isLogged ? (
-                <Button variant="ghost" onClick={onSignOut} className="justify-start text-muted-foreground"><LogOut className="size-4 mr-2" />Sair</Button>
-              ) : (
-                <Link to="/auth"><Button className="w-full bg-gradient-gold text-primary-foreground"><LogIn className="size-4 mr-2" />Entrar</Button></Link>
-              )}
-            </nav>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </header>
+              <p className="px-3 text-xs uppercase tracking-wider text-muted-foreground mb-1">Administração</p>
+              {adminItems.map((i) => <NavItem key={i.to} {...i} admin />)}
+            </>
+          )}
+          <div className="fpc-divider my-3" />
+          {isLogged ? (
+            <Button variant="ghost" onClick={onSignOut} className="justify-start text-muted-foreground"><LogOut className="size-4 mr-2" />Sair</Button>
+          ) : (
+            <Link to="/auth"><Button className="w-full bg-gradient-gold text-primary-foreground"><LogIn className="size-4 mr-2" />Entrar</Button></Link>
+          )}
+        </nav>
+      </SheetContent>
+    </Sheet>
   );
 }
 
