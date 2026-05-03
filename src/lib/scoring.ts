@@ -75,8 +75,7 @@ export interface ScoringInput {
   totalPlayers: number;
   position: number;
   totalActions: number;
-  /** Mantido por compatibilidade — não é usado no cálculo oficial. */
-  koPoints?: number;
+  koPoints: number;
 }
 
 export interface ScoringBreakdown {
@@ -91,7 +90,6 @@ export function calcTournamentPoints(input: ScoringInput): ScoringBreakdown {
   const pbt = getPBT(input.position, input.totalPlayers);
   const fm = getFM(input.totalActions);
   const pbtTimesFm = customRound(pbt * fm);
-  // KO não compõe a pontuação oficial (regulamento 2026), mas mantemos o campo na resposta.
-  const ko = 0;
-  return { pbt, fm, pbtTimesFm, ko, total: pbtTimesFm };
+  const ko = Math.max(0, Math.round(input.koPoints || 0));
+  return { pbt, fm, pbtTimesFm, ko, total: pbtTimesFm + ko };
 }
