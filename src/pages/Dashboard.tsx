@@ -83,15 +83,17 @@ function WelcomeCard({ profile, levelData, mySeasonIndex }: any) {
   );
 }
 
-function StatsGrid({ games, wins, points, position }: { games: number; wins: number; points: number; position: number | null }) {
+function StatsGrid({ games, wins, podiums, ko, points, position }: { games: number; wins: number; podiums: number; ko: number; points: number; position: number | null }) {
   const items = [
+    { label: "Posição", value: position ? ordinal(position) : "—", icon: TrendingUp, color: "text-tournament" },
+    { label: "Pontos", value: formatPoints(points), icon: Sparkles, color: "text-primary-glow" },
     { label: "Partidas", value: games, icon: Target, color: "text-primary" },
     { label: "Vitórias", value: wins, icon: Trophy, color: "text-warning" },
-    { label: "Pontos", value: formatPoints(points), icon: Sparkles, color: "text-primary-glow" },
-    { label: "Posição", value: position ? ordinal(position) : "—", icon: TrendingUp, color: "text-tournament" },
+    { label: "Pódios", value: podiums, icon: Award, color: "text-warning" },
+    { label: "KOs", value: ko, icon: Swords, color: "text-tournament" },
   ];
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {items.map((s) => (
         <Card key={s.label} className="fpc-card fpc-hover-gold">
           <CardContent className="p-4">
