@@ -73,6 +73,17 @@ export function useMonthlyRankings(year: number) {
   });
 }
 
+export function useAllMonthlyRankings() {
+  return useQuery({
+    queryKey: ["monthly_rankings", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("monthly_rankings").select("*");
+      if (error) throw error;
+      return (data ?? []) as DbMonthlyRanking[];
+    },
+  });
+}
+
 export function useSeasonChampions() {
   return useQuery({
     queryKey: ["season_champions"],
