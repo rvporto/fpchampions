@@ -43,7 +43,8 @@ export default function Ranking() {
     const title = tab === "month" ? `Ranking ${MONTHS_PT[month - 1]} ${year}` : `Ranking Temporada ${year}`;
     setBusy(true);
     try {
-      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} />, `${title.replace(/\s+/g, "_")}.jpg`);
+      const reportDelta = tab === "season" ? deltaMap : undefined;
+      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} deltaMap={reportDelta} />, `${title.replace(/\s+/g, "_")}.jpg`);
       toast.success("Relatório baixado.");
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
