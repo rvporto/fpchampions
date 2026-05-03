@@ -72,8 +72,24 @@ export default function Perfil() {
         <StatCard icon={Target} label="Partidas" value={stats?.games ?? 0} />
         <StatCard icon={Trophy} label="Vitórias" value={stats?.wins ?? 0} />
         <StatCard icon={Sparkles} label="Pontos" value={formatPoints(stats?.points ?? 0)} />
-        <StatCard icon={Coins} label="Investido" value={formatBRL(stats?.invested ?? 0)} />
+        <StatCard icon={Coins} label="Prêmios" value={formatBRL(Number((profile as any).lifetime_winnings || 0))} />
       </div>
+
+      <Card className="fpc-card">
+        <CardHeader><CardTitle className="font-display fpc-text-gold">Conquistas ({achievements.filter((a) => a.unlocked).length}/{achievements.length})</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {achievements.map((a) => (
+            <div key={a.def.code} className={`fpc-card p-3 rounded-xl ${a.unlocked ? "" : "opacity-40"}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xl">{a.def.icon}</span>
+                {a.def.repeatable && a.count > 0 && <span className="fpc-chip text-[10px]">×{a.count}</span>}
+              </div>
+              <p className="font-medium text-sm mt-1 break-words">{a.def.name}</p>
+              <p className="text-[10px] text-muted-foreground break-words line-clamp-2">{a.def.description}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card className="fpc-card">
         <CardHeader><CardTitle className="font-display fpc-text-gold">Histórico de Partidas</CardTitle></CardHeader>
