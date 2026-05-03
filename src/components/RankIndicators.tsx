@@ -12,7 +12,7 @@ export function LevelBadge({ level, className }: { level?: number | null; classN
       )}
       title={`Nível ${level}`}
     >
-      Nv {level}
+      {level}
     </span>
   );
 }
