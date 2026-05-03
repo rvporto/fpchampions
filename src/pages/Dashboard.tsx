@@ -23,7 +23,7 @@ export default function Dashboard() {
   const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month });
   const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
   const { data: games = [] } = useGames();
-  const { data: stats } = usePlayerStats(user?.id);
+  const { data: stats } = usePlayerStats(user?.id, year);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
   if (!profile) return <Navigate to="/complete-profile" replace />;
