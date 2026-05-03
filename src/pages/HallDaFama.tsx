@@ -20,10 +20,11 @@ export default function HallDaFama() {
         <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>
       ) : (
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="rounds"><Spade className="size-4 mr-1" />Rodadas</TabsTrigger>
             <TabsTrigger value="months"><Sparkles className="size-4 mr-1" />Meses</TabsTrigger>
-            <TabsTrigger value="year"><Crown className="size-4 mr-1" />K do Poker</TabsTrigger>
+            <TabsTrigger value="as">🂡 Ás</TabsTrigger>
+            <TabsTrigger value="year"><Crown className="size-4 mr-1" />K</TabsTrigger>
           </TabsList>
 
           <TabsContent value="rounds" className="mt-4">
@@ -31,6 +32,9 @@ export default function HallDaFama() {
           </TabsContent>
           <TabsContent value="months" className="mt-4">
             <CountList title="Vencedores do Mês" icon={<Sparkles className="size-5" />} entries={data?.months ?? []} unit="meses" />
+          </TabsContent>
+          <TabsContent value="as" className="mt-4">
+            <ChampionGrid title="Ás do Poker — Indicados" entries={data?.asChampions ?? []} />
           </TabsContent>
           <TabsContent value="year" className="mt-4">
             <ChampionGrid title="K do Poker — Campeões do Ano" entries={data?.yearChampions ?? []} />

@@ -15,7 +15,8 @@ export interface HallEntry {
 export interface HallData {
   rounds: HallEntry[]; // vencedores de partidas (acumulado)
   months: HallEntry[]; // meses vencidos
-  yearChampions: HallEntry[]; // campeão de cada temporada
+  yearChampions: HallEntry[]; // K do Poker (oficial via season_champions, fallback agregação)
+  asChampions: HallEntry[]; // Ás do Poker (indicado pelo admin)
 }
 
 export function useHallOfFame() {
@@ -29,7 +30,24 @@ export function useHallOfFame() {
       if (error) throw error;
       const gamesList = (games ?? []) as DbGame[];
       const gameIds = gamesList.map((g) => g.id);
-      if (!gameIds.length) return { rounds: [], months: [], yearChampions: [] };
+
+      const [{ data: champs }, { data: profsAll }] = await Promise.all([
+        supabase.from("season_champions").select("*"),
+        supabase.from("profiles").select("id, nickname, avatar_url"),
+      ]);
+      const profAllMap = new Map((profsAll ?? []).map((p: any) => [p.id, p]));
+
+      if (!gameIds.length) {
+        const yearChampions = (champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => {
+          const p: any = profAllMap.get(c.k_user_id);
+          return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
+        });
+        const asChampions = (champs ?? []).filter((c: any) => c.as_user_id).map((c: any) => {
+          const p: any = profAllMap.get(c.as_user_id);
+          return { key: `u:${c.as_user_id}`, isTemp: false, id: c.as_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
+        });
+        return { rounds: [], months: [], yearChampions, asChampions };
+      }
 
       const { data: parts, error: e2 } = await supabase
         .from("game_participations")
@@ -40,12 +58,8 @@ export function useHallOfFame() {
       const userIds = [...new Set((parts ?? []).map((p: any) => p.user_id).filter(Boolean) as string[])];
       const tempIds = [...new Set((parts ?? []).map((p: any) => p.temp_player_id).filter(Boolean) as string[])];
       const [{ data: profs }, { data: temps }] = await Promise.all([
-        userIds.length
-          ? supabase.from("profiles").select("id, nickname, avatar_url, full_name").in("id", userIds)
-          : Promise.resolve({ data: [] }),
-        tempIds.length
-          ? supabase.from("temporary_players").select("id, nickname, avatar_url, full_name").in("id", tempIds)
-          : Promise.resolve({ data: [] }),
+        userIds.length ? supabase.from("profiles").select("id, nickname, avatar_url, full_name").in("id", userIds) : Promise.resolve({ data: [] }),
+        tempIds.length ? supabase.from("temporary_players").select("id, nickname, avatar_url, full_name").in("id", tempIds) : Promise.resolve({ data: [] }),
       ]);
       const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       const tempMap = new Map((temps ?? []).map((p: any) => [p.id, p]));
@@ -62,7 +76,6 @@ export function useHallOfFame() {
         };
       };
 
-      // Rounds — vitórias (position=1)
       const roundsMap = new Map<string, HallEntry>();
       for (const p of (parts ?? []) as DbParticipation[]) {
         if (p.position !== 1) continue;
@@ -73,7 +86,6 @@ export function useHallOfFame() {
         roundsMap.set(m.key, e);
       }
 
-      // Months e Year champions: agregar pontos por (year, month) e (year)
       const gMap = new Map(gamesList.map((g) => [g.id, g]));
       const monthAgg = new Map<string, Map<string, { entry: HallEntry; pts: number }>>();
       const yearAgg = new Map<number, Map<string, { entry: HallEntry; pts: number }>>();
@@ -97,7 +109,6 @@ export function useHallOfFame() {
         yearAgg.set(g.season_year, yearInner);
       }
 
-      // contar meses vencidos por jogador
       const monthsMap = new Map<string, HallEntry>();
       for (const inner of monthAgg.values()) {
         const arr = [...inner.values()].sort((a, b) => b.pts - a.pts);
@@ -108,17 +119,33 @@ export function useHallOfFame() {
         monthsMap.set(w.key, e);
       }
 
-      const yearChampions: HallEntry[] = [];
+      // Year champions: priorizar season_champions oficiais; senão usar agregação
+      const officialKYears = new Set((champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => c.year));
+      const yearChampions: HallEntry[] = (champs ?? [])
+        .filter((c: any) => c.k_user_id)
+        .map((c: any) => {
+          const p: any = profAllMap.get(c.k_user_id);
+          return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year };
+        });
       for (const [year, inner] of yearAgg.entries()) {
+        if (officialKYears.has(year)) continue;
         const arr = [...inner.values()].sort((a, b) => b.pts - a.pts);
         if (!arr.length || arr[0].pts <= 0) continue;
         yearChampions.push({ ...arr[0].entry, year, count: 1 });
       }
 
+      const asChampions: HallEntry[] = (champs ?? [])
+        .filter((c: any) => c.as_user_id)
+        .map((c: any) => {
+          const p: any = profAllMap.get(c.as_user_id);
+          return { key: `u:${c.as_user_id}`, isTemp: false, id: c.as_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year };
+        });
+
       return {
         rounds: [...roundsMap.values()].sort((a, b) => b.count - a.count),
         months: [...monthsMap.values()].sort((a, b) => b.count - a.count),
         yearChampions: yearChampions.sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+        asChampions: asChampions.sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
       };
     },
   });
