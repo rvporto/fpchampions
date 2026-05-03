@@ -1,57 +1,74 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Trophy, Flame, Target, TrendingUp, Crown, ChevronRight, FileText, Award, Sparkles } from "lucide-react";
+import { useMemo } from "react";
+import { Link, Navigate } from "react-router-dom";
+import { Trophy, Flame, Target, TrendingUp, Crown, ChevronRight, FileText, Sparkles, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { CURRENT_USER_ID, GAMES, getMonthlyRanking, getSeasonalRanking, playerById, USER_ACHIEVEMENTS } from "@/lib/mockData";
-import { ACHIEVEMENTS, levelFromXp } from "@/lib/xpSystem";
+import { levelFromXp } from "@/lib/xpSystem";
 import { formatDate, formatPoints, MONTHS_PT, ordinal } from "@/lib/format";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRanking, type RankingRow } from "@/hooks/useRanking";
+import { useGames } from "@/hooks/useGames";
+import { usePlayerStats } from "@/hooks/usePlayerStats";
 
 export default function Dashboard() {
-  const me = playerById(CURRENT_USER_ID)!;
+  const { user, profile, loading } = useAuth();
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
-  const monthlyRanking = useMemo(() => getMonthlyRanking(year, month), [year, month]);
-  const seasonRanking = useMemo(() => getSeasonalRanking(year), [year]);
-  const myMonthIndex = monthlyRanking.findIndex((r) => r.playerId === me.id);
-  const mySeasonIndex = seasonRanking.findIndex((r) => r.playerId === me.id);
-  const lvl = levelFromXp(me.xp);
 
-  const recentGames = GAMES.filter((g) => g.status === "finished").slice(0, 3);
-  const myFinishedGames = GAMES.filter((g) => g.status === "finished" && g.participants.some((p) => p.playerId === me.id));
-  const myWins = myFinishedGames.filter((g) => g.participants.find((p) => p.playerId === me.id)?.position === 1).length;
-  const myPoints = seasonRanking.find((r) => r.playerId === me.id)?.points ?? 0;
+  const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month });
+  const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
+  const { data: games = [] } = useGames();
+  const { data: stats } = usePlayerStats(user?.id);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
+  if (!profile) return <Navigate to="/complete-profile" replace />;
+
+  const myMonthIndex = monthlyRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
+  const mySeasonIndex = seasonRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
+  const lvl = levelFromXp(profile.xp ?? 0);
+  const recentGames = games.filter((g) => g.status === "finished").slice(0, 3);
 
   return (
     <div className="space-y-6">
-      <WelcomeCard me={me} levelData={lvl} mySeasonIndex={mySeasonIndex} />
-      <StatsGrid games={myFinishedGames.length} wins={myWins} points={myPoints} position={mySeasonIndex + 1 || null} />
-      <MonthlyRankingCard ranking={monthlyRanking} myIndex={myMonthIndex} year={year} month={month} />
+      <WelcomeCard profile={profile} levelData={lvl} mySeasonIndex={mySeasonIndex} />
+      <StatsGrid
+        games={stats?.games ?? 0}
+        wins={stats?.wins ?? 0}
+        points={stats?.points ?? 0}
+        position={mySeasonIndex >= 0 ? mySeasonIndex + 1 : null}
+      />
+      <MonthlyRankingCard
+        ranking={monthlyRanking}
+        myIndex={myMonthIndex}
+        year={year}
+        month={month}
+        loading={lr1}
+        currentUserId={user?.id}
+      />
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <SeasonTopCard ranking={seasonRanking} year={year} />
+        <SeasonTopCard ranking={seasonRanking} year={year} loading={lr2} currentUserId={user?.id} />
         <RecentGamesCard games={recentGames} />
       </div>
-      <AchievementsCard />
     </div>
   );
 }
 
-function WelcomeCard({ me, levelData, mySeasonIndex }: any) {
+function WelcomeCard({ profile, levelData, mySeasonIndex }: any) {
   return (
     <Card className="fpc-card overflow-hidden">
       <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-gold" />
       <CardContent className="p-6 flex items-center gap-4 relative">
-        <PlayerAvatar avatarId={me.avatarId} name={me.nickname} size={72} />
+        <PlayerAvatar avatarId={profile.avatar_url ?? "a1"} name={profile.nickname ?? ""} size={72} />
         <div className="flex-1 min-w-0">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Bem-vindo de volta</p>
-          <h1 className="font-display text-2xl sm:text-3xl fpc-text-gold truncate">{me.nickname}</h1>
-          <div className="mt-2 flex items-center gap-2 text-sm">
+          <h1 className="font-display text-2xl sm:text-3xl fpc-text-gold truncate">{profile.nickname}</h1>
+          <div className="mt-2 flex items-center gap-2 text-sm flex-wrap">
             <span className="fpc-chip"><Crown className="size-3" />Nível {levelData.level}</span>
             {mySeasonIndex >= 0 && <span className="fpc-chip"><Trophy className="size-3" />{ordinal(mySeasonIndex + 1)} no ranking</span>}
           </div>
@@ -77,9 +94,7 @@ function StatsGrid({ games, wins, points, position }: { games: number; wins: num
       {items.map((s) => (
         <Card key={s.label} className="fpc-card fpc-hover-gold">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <s.icon className={`size-5 ${s.color}`} />
-            </div>
+            <s.icon className={`size-5 ${s.color}`} />
             <p className="mt-2 text-2xl font-display">{s.value}</p>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</p>
           </CardContent>
@@ -89,7 +104,7 @@ function StatsGrid({ games, wins, points, position }: { games: number; wins: num
   );
 }
 
-function MonthlyRankingCard({ ranking, myIndex, year, month }: any) {
+function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUserId }: any) {
   const top5 = ranking.slice(0, 5);
   const showMeRow = myIndex >= 5;
   const meRow = showMeRow ? ranking[myIndex] : null;
@@ -104,16 +119,17 @@ function MonthlyRankingCard({ ranking, myIndex, year, month }: any) {
           <p className="text-xs text-muted-foreground">{MONTHS_PT[month - 1]} de {year}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.success("Relatório do mês gerado (mock)")}>
+          <Button variant="outline" size="sm" onClick={() => toast.info("Relatório em breve")}>
             <FileText className="size-4 mr-1" />Relatório
           </Button>
-          <ExpandRankingSheet ranking={ranking} year={year} month={month} />
+          <ExpandRankingSheet ranking={ranking} year={year} month={month} currentUserId={currentUserId} />
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {top5.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma partida finalizada neste mês ainda.</p>}
-        {top5.map((row: any, idx: number) => (
-          <RankRow key={row.playerId} idx={idx + 1} row={row} highlight={row.playerId === CURRENT_USER_ID} />
+        {loading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
+        {!loading && top5.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma partida finalizada neste mês ainda.</p>}
+        {top5.map((row: RankingRow, idx: number) => (
+          <RankRow key={`${row.isTemp ? "t" : "u"}-${row.id}`} idx={idx + 1} row={row} highlight={!row.isTemp && row.id === currentUserId} />
         ))}
         {showMeRow && meRow && (
           <>
@@ -126,16 +142,18 @@ function MonthlyRankingCard({ ranking, myIndex, year, month }: any) {
   );
 }
 
-function RankRow({ idx, row, highlight, you }: { idx: number; row: any; highlight?: boolean; you?: boolean }) {
-  const player = playerById(row.playerId);
-  if (!player) return null;
+function RankRow({ idx, row, highlight, you }: { idx: number; row: RankingRow; highlight?: boolean; you?: boolean }) {
   const medal = idx === 1 ? "text-warning" : idx === 2 ? "text-muted-foreground" : idx === 3 ? "text-tournament" : "text-foreground";
   return (
     <div className={`flex items-center gap-3 rounded-xl px-3 py-2 ${highlight ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/40"} transition`}>
       <span className={`font-display text-lg w-8 text-center ${medal}`}>{idx}º</span>
-      <PlayerAvatar avatarId={player.avatarId} name={player.nickname} size={36} />
+      <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={36} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm break-words line-clamp-2">{player.nickname} {you && <span className="text-primary text-xs">— Você</span>}</p>
+        <p className="font-medium text-sm break-words line-clamp-2">
+          {row.nickname}
+          {row.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}
+          {you && <span className="text-primary text-xs ml-1">— Você</span>}
+        </p>
         <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
       </div>
       <div className="text-right">
@@ -146,7 +164,7 @@ function RankRow({ idx, row, highlight, you }: { idx: number; row: any; highligh
   );
 }
 
-function ExpandRankingSheet({ ranking, year, month }: any) {
+function ExpandRankingSheet({ ranking, year, month, currentUserId }: any) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -157,21 +175,27 @@ function ExpandRankingSheet({ ranking, year, month }: any) {
       <SheetContent side="right" className="w-[90%] sm:max-w-md bg-card border-border overflow-y-auto">
         <SheetHeader><SheetTitle className="font-display fpc-text-gold">Ranking — {MONTHS_PT[month - 1]} {year}</SheetTitle></SheetHeader>
         <div className="mt-4 space-y-2">
-          {ranking.map((row: any, i: number) => <RankRow key={row.playerId} idx={i + 1} row={row} highlight={row.playerId === CURRENT_USER_ID} />)}
+          {ranking.map((row: RankingRow, i: number) => (
+            <RankRow key={`${row.isTemp ? "t" : "u"}-${row.id}`} idx={i + 1} row={row} highlight={!row.isTemp && row.id === currentUserId} />
+          ))}
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function SeasonTopCard({ ranking, year }: any) {
+function SeasonTopCard({ ranking, year, loading, currentUserId }: any) {
   return (
     <Card className="fpc-card">
       <CardHeader>
         <CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Trophy className="size-5" />Top 5 — Temporada {year}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {ranking.slice(0, 5).map((row: any, i: number) => <RankRow key={row.playerId} idx={i + 1} row={row} highlight={row.playerId === CURRENT_USER_ID} />)}
+        {loading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
+        {!loading && ranking.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem dados ainda.</p>}
+        {ranking.slice(0, 5).map((row: RankingRow, i: number) => (
+          <RankRow key={`${row.isTemp ? "t" : "u"}-${row.id}`} idx={i + 1} row={row} highlight={!row.isTemp && row.id === currentUserId} />
+        ))}
         <Link to="/ranking" className="block text-center text-xs text-primary hover:underline mt-3">Ver ranking completo →</Link>
       </CardContent>
     </Card>
@@ -183,50 +207,17 @@ function RecentGamesCard({ games }: { games: any[] }) {
     <Card className="fpc-card">
       <CardHeader><CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Sparkles className="size-5" />Partidas Recentes</CardTitle></CardHeader>
       <CardContent className="space-y-2">
-        {games.map((g) => {
-          const winner = g.participants.find((p: any) => p.position === 1);
-          const winnerPlayer = winner ? playerById(winner.playerId) : null;
-          return (
-            <Link to="/partidas" key={g.id} className="block fpc-card fpc-hover-gold p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-sm break-words line-clamp-2">{g.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(g.date)} · {g.total_players} jogadores</p>
-                </div>
-                {winnerPlayer && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <PlayerAvatar avatarId={winnerPlayer.avatarId} name={winnerPlayer.nickname} size={28} />
-                    <span className="text-xs text-primary">{winnerPlayer.nickname}</span>
-                  </div>
-                )}
+        {games.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas finalizadas.</p>}
+        {games.map((g) => (
+          <Link to="/partidas" key={g.id} className="block fpc-card fpc-hover-gold p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-sm break-words line-clamp-2">{g.name}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(g.date)}</p>
               </div>
-            </Link>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
-}
-
-function AchievementsCard() {
-  const earned = USER_ACHIEVEMENTS.length;
-  return (
-    <Card className="fpc-card">
-      <CardHeader>
-        <CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Award className="size-5" />Conquistas ({earned}/{ACHIEVEMENTS.length})</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-        {ACHIEVEMENTS.map((a) => {
-          const ua = USER_ACHIEVEMENTS.find((u) => u.code === a.code);
-          const got = !!ua;
-          return (
-            <div key={a.code} className={`fpc-card p-3 text-center ${got ? "" : "opacity-40 grayscale"}`} title={a.description}>
-              <div className="text-2xl">{a.icon}</div>
-              <p className="text-[11px] mt-1 leading-tight font-medium break-words line-clamp-2">{a.name}</p>
-              {a.repeatable && got && <span className="fpc-chip mt-1 text-[10px]">×{ua!.count}</span>}
             </div>
-          );
-        })}
+          </Link>
+        ))}
       </CardContent>
     </Card>
   );

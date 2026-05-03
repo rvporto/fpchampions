@@ -1,90 +1,90 @@
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { CURRENT_USER_ID, GAMES, playerById, USER_ACHIEVEMENTS } from "@/lib/mockData";
-import { ACHIEVEMENTS, levelFromXp } from "@/lib/xpSystem";
-import { formatBRL, formatDate, formatPoints } from "@/lib/format";
-import { Coins, Pencil, Target, Trophy, Sparkles, Award } from "lucide-react";
+import { AvatarPicker } from "@/components/AvatarPicker";
+import { levelFromXp } from "@/lib/xpSystem";
+import { formatBRL, formatDate, formatPoints, ordinal } from "@/lib/format";
+import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Perfil() {
-  const me = playerById(CURRENT_USER_ID)!;
-  const lvl = levelFromXp(me.xp);
-  const myGames = GAMES.filter((g) => g.status === "finished" && g.participants.some((p) => p.playerId === me.id));
-  const wins = myGames.filter((g) => g.participants.find((p) => p.playerId === me.id)?.position === 1).length;
-  const totalPoints = myGames.reduce((s, g) => s + (g.participants.find((p) => p.playerId === me.id)?.points ?? 0), 0);
-  const totalKO = myGames.reduce((s, g) => s + (g.participants.find((p) => p.playerId === me.id)?.koPoints ?? 0), 0);
+  const { user, profile, loading, signOut, refreshProfile } = useAuth();
+  const { data: stats, isLoading: statsLoading } = usePlayerStats(user?.id);
+  const [editing, setEditing] = useState(false);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!profile) return <Navigate to="/complete-profile" replace />;
+
+  const lvl = levelFromXp(profile.xp ?? 0);
 
   return (
     <div className="space-y-6">
       <Card className="fpc-card">
         <CardContent className="p-6 flex flex-col sm:flex-row gap-4 sm:items-center">
-          <PlayerAvatar avatarId={me.avatarId} name={me.nickname} size={96} />
+          <PlayerAvatar avatarId={profile.avatar_url ?? "a1"} name={profile.nickname ?? ""} size={96} />
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-3xl fpc-text-gold break-words">{me.nickname}</h1>
-            <p className="text-muted-foreground break-words">{me.full_name}</p>
+            <h1 className="font-display text-3xl fpc-text-gold break-words">{profile.nickname}</h1>
+            <p className="text-muted-foreground break-words">{profile.full_name}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="fpc-chip">Nível {lvl.level}</span>
-              <span className="fpc-chip">{formatPoints(me.xp)} XP</span>
+              <span className="fpc-chip">{formatPoints(profile.xp ?? 0)} XP</span>
+              {profile.current_rank && <span className="fpc-chip">{ordinal(profile.current_rank)} no ranking</span>}
             </div>
             <div className="mt-3">
               <Progress value={lvl.progress * 100} className="h-2" />
               <p className="text-xs text-muted-foreground mt-1">{formatPoints(lvl.xpInLevel)} / 1000 XP</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => toast.info("Editar perfil (mock)")}><Pencil className="size-4 mr-1" />Editar</Button>
+          <div className="flex flex-col gap-2">
+            <EditProfileDialog open={editing} onOpenChange={setEditing} onSaved={refreshProfile} />
+            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              <LogOut className="size-4 mr-1" />Sair
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={Target} label="Partidas" value={myGames.length} />
-        <StatCard icon={Trophy} label="Vitórias" value={wins} />
-        <StatCard icon={Sparkles} label="Pontos" value={formatPoints(totalPoints)} />
-        <StatCard icon={Coins} label="Lucro Total" value={formatBRL(me.lifetime_winnings)} />
+        <StatCard icon={Target} label="Partidas" value={stats?.games ?? 0} />
+        <StatCard icon={Trophy} label="Vitórias" value={stats?.wins ?? 0} />
+        <StatCard icon={Sparkles} label="Pontos" value={formatPoints(stats?.points ?? 0)} />
+        <StatCard icon={Coins} label="Investido" value={formatBRL(stats?.invested ?? 0)} />
       </div>
-
-      <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Award className="size-5" />Conquistas</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {ACHIEVEMENTS.map((a) => {
-            const ua = USER_ACHIEVEMENTS.find((u) => u.code === a.code);
-            const got = !!ua;
-            return (
-              <div key={a.code} className={`fpc-card p-3 ${got ? "" : "opacity-40 grayscale"}`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{a.icon}</span>
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm break-words">{a.name}{a.repeatable && got && <span className="text-primary text-xs ml-1">×{ua!.count}</span>}</p>
-                    <p className="text-[11px] text-muted-foreground break-words line-clamp-2">{a.description}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
 
       <Card className="fpc-card">
         <CardHeader><CardTitle className="font-display fpc-text-gold">Histórico de Partidas</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          {myGames.map((g) => {
-            const my = g.participants.find((p) => p.playerId === me.id)!;
-            return (
-              <div key={g.id} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-secondary/40">
-                <div className="min-w-0">
-                  <p className="font-medium text-sm break-words line-clamp-2">{g.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(g.date)} · {g.total_players} jogadores</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-display text-primary">{my.position}º · {formatPoints(my.points)} pts</p>
-                  <p className="text-xs text-muted-foreground">+{my.xp} XP · {my.koPoints} KOs</p>
-                </div>
+          {statsLoading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
+          {!statsLoading && (stats?.history.length ?? 0) === 0 && (
+            <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas registradas ainda.</p>
+          )}
+          {stats?.history.map((h) => (
+            <div key={h.participation.id} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-secondary/40">
+              <div className="min-w-0">
+                <p className="font-medium text-sm break-words line-clamp-2">{h.game.name}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(h.game.date)}</p>
               </div>
-            );
-          })}
-          {myGames.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas registradas ainda.</p>}
-          <div className="text-xs text-muted-foreground text-center mt-2">Total de KOs: {totalKO}</div>
+              <div className="text-right shrink-0">
+                <p className="font-display text-primary">
+                  {h.participation.position ? `${h.participation.position}º` : "—"} · {formatPoints(Number(h.participation.ranking_points || 0))} pts
+                </p>
+                <p className="text-xs text-muted-foreground">+{h.participation.xp_earned} XP · {h.participation.ko_points} KOs</p>
+              </div>
+            </div>
+          ))}
+          {stats && stats.history.length > 0 && (
+            <div className="text-xs text-muted-foreground text-center mt-2">Total de KOs: {stats.ko}</div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -100,5 +100,71 @@ function StatCard({ icon: Icon, label, value }: any) {
         <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => Promise<void> }) {
+  const { user, profile } = useAuth();
+  const [nickname, setNickname] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [avatar, setAvatar] = useState("a1");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open && profile) {
+      setNickname(profile.nickname ?? "");
+      setFullName(profile.full_name ?? "");
+      setPhone(profile.phone ?? "");
+      setAvatar(profile.avatar_url ?? "a1");
+    }
+  }, [open, profile]);
+
+  const save = async () => {
+    if (!user) return;
+    if (!nickname.trim() || !fullName.trim()) return toast.error("Apelido e nome são obrigatórios.");
+    setBusy(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        nickname: nickname.trim(),
+        full_name: fullName.trim(),
+        phone: phone.trim() || null,
+        avatar_url: avatar,
+      })
+      .eq("id", user.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    await onSaved();
+    toast.success("Perfil atualizado!");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm"><Pencil className="size-4 mr-1" />Editar</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle className="font-display fpc-text-gold">Editar perfil</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="mb-2 block">Avatar</Label>
+            <AvatarPicker value={avatar} onChange={setAvatar} userId={user?.id} />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div><Label>Apelido</Label><Input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={30} /></div>
+            <div><Label>Nome completo</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={80} /></div>
+          </div>
+          <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={save} disabled={busy} className="bg-gradient-gold text-primary-foreground">
+            {busy ? <Loader2 className="size-4 animate-spin" /> : "Salvar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
