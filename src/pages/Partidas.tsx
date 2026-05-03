@@ -40,7 +40,14 @@ export default function Partidas() {
       ) : (
         <div className="space-y-3">
           {games.map((g) => (
-            <Card key={g.id} className="fpc-card fpc-hover-gold">
+            <Card
+              key={g.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetailsId(g.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailsId(g.id); } }}
+              className="fpc-card fpc-hover-gold cursor-pointer"
+            >
               <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -56,7 +63,6 @@ export default function Partidas() {
                     <span className="flex items-center gap-1"><Trophy className="size-3.5" />Pote {formatBRL(Number(g.total_pot))}</span>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setDetailsId(g.id)}>Ver detalhes</Button>
               </CardContent>
             </Card>
           ))}
