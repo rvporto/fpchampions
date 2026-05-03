@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DbGame, DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
+import type { DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
 
 export interface RankingRow {
   id: string;
   isTemp: boolean;
   nickname: string;
   avatarId: string;
+  level?: number;
   points: number;
   games: number;
   wins: number;
@@ -14,65 +15,101 @@ export interface RankingRow {
 
 interface Opts {
   year: number;
-  month?: number; // se omitido = temporada inteira
+  month?: number;
+  monthMax?: number;
+}
+
+async function fetchRanking({ year, month, monthMax }: Opts): Promise<RankingRow[]> {
+  let q = supabase
+    .from("games")
+    .select("id, season_year, month, status")
+    .eq("season_year", year)
+    .eq("status", "finished");
+  if (month) q = q.eq("month", month);
+  if (monthMax) q = q.lte("month", monthMax);
+  const { data: games, error } = await q;
+  if (error) throw error;
+  const gameIds = (games ?? []).map((g: any) => g.id as string);
+  if (gameIds.length === 0) return [];
+
+  const { data: parts, error: e2 } = await supabase
+    .from("game_participations")
+    .select("*")
+    .in("game_id", gameIds);
+  if (e2) throw e2;
+
+  const userIds = [...new Set((parts ?? []).map((p: any) => p.user_id).filter(Boolean) as string[])];
+  const tempIds = [...new Set((parts ?? []).map((p: any) => p.temp_player_id).filter(Boolean) as string[])];
+
+  const [{ data: profs }, { data: temps }] = await Promise.all([
+    userIds.length
+      ? supabase.from("profiles").select("id, nickname, avatar_url, level").in("id", userIds)
+      : Promise.resolve({ data: [] as any[] }),
+    tempIds.length
+      ? supabase.from("temporary_players").select("id, nickname, avatar_url").in("id", tempIds)
+      : Promise.resolve({ data: [] as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[] }),
+  ]);
+  const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+  const tempMap = new Map((temps ?? []).map((p: any) => [p.id, p]));
+
+  const rows = new Map<string, RankingRow>();
+  for (const p of (parts ?? []) as DbParticipation[]) {
+    const key = p.user_id ? `u:${p.user_id}` : p.temp_player_id ? `t:${p.temp_player_id}` : null;
+    if (!key) continue;
+    const isTemp = !!p.temp_player_id;
+    const meta: any = isTemp ? tempMap.get(p.temp_player_id!) : profMap.get(p.user_id!);
+    const row = rows.get(key) ?? {
+      id: (p.user_id ?? p.temp_player_id) as string,
+      isTemp,
+      nickname: meta?.nickname ?? p.snapshot_nickname ?? "Jogador",
+      avatarId: meta?.avatar_url ?? p.snapshot_avatar_url ?? "a1",
+      level: !isTemp ? Number(meta?.level ?? 1) : undefined,
+      points: 0,
+      games: 0,
+      wins: 0,
+    };
+    row.points += Number(p.ranking_points || 0);
+    row.games += 1;
+    if (p.position === 1) row.wins += 1;
+    rows.set(key, row);
+  }
+  return [...rows.values()].sort((a, b) => b.points - a.points);
 }
 
 export function useRanking({ year, month }: Opts) {
   return useQuery({
     queryKey: ["ranking", year, month ?? "season"],
-    queryFn: async (): Promise<RankingRow[]> => {
-      let q = supabase
-        .from("games")
-        .select("id, season_year, month, status")
-        .eq("season_year", year)
-        .eq("status", "finished");
-      if (month) q = q.eq("month", month);
-      const { data: games, error } = await q;
-      if (error) throw error;
-      const gameIds = (games ?? []).map((g: any) => g.id as string);
-      if (gameIds.length === 0) return [];
+    queryFn: () => fetchRanking({ year, month }),
+  });
+}
 
-      const { data: parts, error: e2 } = await supabase
-        .from("game_participations")
-        .select("*")
-        .in("game_id", gameIds);
-      if (e2) throw e2;
+export function rowKey(r: { id: string; isTemp: boolean }) {
+  return `${r.isTemp ? "t" : "u"}:${r.id}`;
+}
 
-      const userIds = [...new Set((parts ?? []).map((p: any) => p.user_id).filter(Boolean) as string[])];
-      const tempIds = [...new Set((parts ?? []).map((p: any) => p.temp_player_id).filter(Boolean) as string[])];
-
-      const [{ data: profs }, { data: temps }] = await Promise.all([
-        userIds.length
-          ? supabase.from("profiles").select("id, nickname, avatar_url").in("id", userIds)
-          : Promise.resolve({ data: [] as Pick<DbProfile, "id" | "nickname" | "avatar_url">[] }),
-        tempIds.length
-          ? supabase.from("temporary_players").select("id, nickname, avatar_url").in("id", tempIds)
-          : Promise.resolve({ data: [] as Pick<DbTempPlayer, "id" | "nickname" | "avatar_url">[] }),
+/**
+ * delta > 0 = subiu, < 0 = desceu, 0 = manteve, null = novo.
+ * Compara ranking da temporada (todos os meses) com ranking até o mês anterior ao atual.
+ */
+export function useSeasonRankingDelta(year: number) {
+  const currentMonth = new Date().getMonth() + 1;
+  return useQuery({
+    queryKey: ["ranking-delta", year, currentMonth],
+    queryFn: async () => {
+      const delta = new Map<string, number | null>();
+      if (currentMonth <= 1) return delta;
+      const [current, previous] = await Promise.all([
+        fetchRanking({ year }),
+        fetchRanking({ year, monthMax: currentMonth - 1 }),
       ]);
-      const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      const tempMap = new Map((temps ?? []).map((p: any) => [p.id, p]));
-
-      const rows = new Map<string, RankingRow>();
-      for (const p of (parts ?? []) as DbParticipation[]) {
-        const key = p.user_id ? `u:${p.user_id}` : p.temp_player_id ? `t:${p.temp_player_id}` : null;
-        if (!key) continue;
-        const isTemp = !!p.temp_player_id;
-        const meta = isTemp ? tempMap.get(p.temp_player_id!) : profMap.get(p.user_id!);
-        const row = rows.get(key) ?? {
-          id: (p.user_id ?? p.temp_player_id) as string,
-          isTemp,
-          nickname: (meta as any)?.nickname ?? p.snapshot_nickname ?? "Jogador",
-          avatarId: (meta as any)?.avatar_url ?? p.snapshot_avatar_url ?? "a1",
-          points: 0,
-          games: 0,
-          wins: 0,
-        };
-        row.points += Number(p.ranking_points || 0);
-        row.games += 1;
-        if (p.position === 1) row.wins += 1;
-        rows.set(key, row);
-      }
-      return [...rows.values()].sort((a, b) => b.points - a.points);
+      const prevPos = new Map<string, number>();
+      previous.forEach((r, i) => prevPos.set(rowKey(r), i + 1));
+      current.forEach((r, i) => {
+        const k = rowKey(r);
+        const prev = prevPos.get(k);
+        delta.set(k, prev === undefined ? null : prev - (i + 1));
+      });
+      return delta;
     },
   });
 }

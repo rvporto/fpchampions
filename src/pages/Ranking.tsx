@@ -7,11 +7,12 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRanking } from "@/hooks/useRanking";
+import { useRanking, useSeasonRankingDelta, rowKey } from "@/hooks/useRanking";
 import { recalcRankingAndXp } from "@/lib/recalc";
 import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
 import { LinkTempPlayerDialog } from "@/components/LinkTempPlayerDialog";
+import { LevelBadge, PositionDelta } from "@/components/RankIndicators";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
@@ -20,6 +21,7 @@ export default function Ranking() {
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
+  const { data: deltaMap } = useSeasonRankingDelta(year);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
 
@@ -41,7 +43,8 @@ export default function Ranking() {
     const title = tab === "month" ? `Ranking ${MONTHS_PT[month - 1]} ${year}` : `Ranking Temporada ${year}`;
     setBusy(true);
     try {
-      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} />, `${title.replace(/\s+/g, "_")}.jpg`);
+      const reportDelta = tab === "season" ? deltaMap : undefined;
+      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} deltaMap={reportDelta} />, `${title.replace(/\s+/g, "_")}.jpg`);
       toast.success("Relatório baixado.");
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
@@ -116,14 +119,19 @@ export default function Ranking() {
             <CardContent className="space-y-2">
               {list.map((row, i) => {
                 const me = !row.isTemp && user?.id === row.id;
+                const delta = tab === "season" ? deltaMap?.get(rowKey(row)) : undefined;
                 return (
                   <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/40"}`}>
                     <span className="font-display text-lg w-8 text-center text-primary">{i + 1}º</span>
+                    {tab === "season" && (
+                      <span className="w-8 flex justify-center"><PositionDelta delta={delta} /></span>
+                    )}
                     <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={36} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm break-words line-clamp-2">
-                        {row.nickname}
-                        {row.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}
+                      <p className="font-medium text-sm break-words line-clamp-2 flex items-center gap-2 flex-wrap">
+                        <span>{row.nickname}</span>
+                        {!row.isTemp && <LevelBadge level={row.level} />}
+                        {row.isTemp && <span className="text-[10px] uppercase text-muted-foreground">temp</span>}
                       </p>
                       <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
                     </div>

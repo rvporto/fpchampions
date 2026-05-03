@@ -1,6 +1,7 @@
 import logo from "@/assets/logo.png";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import type { RankingRow } from "@/hooks/useRanking";
+import { rowKey } from "@/hooks/useRanking";
 import { formatPoints } from "@/lib/format";
 import type { GameWithParticipants } from "@/lib/db-types";
 import { participantDisplay } from "@/lib/db-types";
@@ -16,8 +17,38 @@ const wrap: React.CSSProperties = {
 };
 const headerStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 16, borderBottom: "2px solid #d4a93d", paddingBottom: 16, marginBottom: 24 };
 const goldText: React.CSSProperties = { color: "#e8c34a", fontWeight: 800 };
+const levelBadge: React.CSSProperties = {
+  display: "inline-block",
+  marginLeft: 8,
+  padding: "1px 6px",
+  borderRadius: 6,
+  background: "linear-gradient(135deg,#e8c34a,#d4a93d)",
+  color: "#1a1410",
+  fontSize: 10,
+  fontWeight: 800,
+  verticalAlign: "middle",
+};
 
-export function RankingReport({ title, subtitle, rows }: { title: string; subtitle?: string; rows: RankingRow[] }) {
+function DeltaArrow({ delta }: { delta: number | null | undefined }) {
+  if (delta === undefined) return null;
+  if (delta === null) return <span style={{ color: "#888", fontSize: 14 }}>—</span>;
+  if (delta > 0) return <span style={{ color: "#22c55e", fontSize: 12, fontWeight: 700 }}>▲ {delta}</span>;
+  if (delta < 0) return <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 700 }}>▼ {-delta}</span>;
+  return <span style={{ color: "#888", fontSize: 14 }}>—</span>;
+}
+
+export function RankingReport({
+  title,
+  subtitle,
+  rows,
+  deltaMap,
+}: {
+  title: string;
+  subtitle?: string;
+  rows: RankingRow[];
+  deltaMap?: Map<string, number | null>;
+}) {
+  const showDelta = !!deltaMap;
   return (
     <div style={wrap}>
       <div style={headerStyle}>
@@ -40,7 +71,10 @@ export function RankingReport({ title, subtitle, rows }: { title: string; subtit
               <div style={{ marginTop: 8, display: "flex", justifyContent: "center" }}>
                 <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={place === 1 ? 80 : 64} />
               </div>
-              <div style={{ marginTop: 8, fontWeight: 700 }}>{row.nickname}</div>
+              <div style={{ marginTop: 8, fontWeight: 700 }}>
+                {row.nickname}
+                {!row.isTemp && row.level && <span style={levelBadge}>Nv {row.level}</span>}
+              </div>
               <div style={{ ...goldText, fontSize: 22, marginTop: 4 }}>{formatPoints(row.points)} pts</div>
             </div>
           );
@@ -48,17 +82,29 @@ export function RankingReport({ title, subtitle, rows }: { title: string; subtit
       </div>
 
       <div style={{ background: "#141414", borderRadius: 16, overflow: "hidden", border: "1px solid #2a2a2a" }}>
-        {rows.map((r, i) => (
-          <div key={`${r.isTemp ? "t" : "u"}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderTop: i ? "1px solid #222" : "none" }}>
-            <div style={{ ...goldText, width: 36, textAlign: "center" }}>{i + 1}º</div>
-            <PlayerAvatar avatarId={r.avatarId} name={r.nickname} size={36} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>{r.nickname}{r.isTemp && <span style={{ marginLeft: 8, fontSize: 10, color: "#999", textTransform: "uppercase" }}>temp</span>}</div>
-              <div style={{ fontSize: 11, color: "#888" }}>{r.games} partidas · {r.wins} vitórias</div>
+        {rows.map((r, i) => {
+          const delta = showDelta ? deltaMap!.get(rowKey(r)) : undefined;
+          return (
+            <div key={`${r.isTemp ? "t" : "u"}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderTop: i ? "1px solid #222" : "none" }}>
+              <div style={{ ...goldText, width: 36, textAlign: "center" }}>{i + 1}º</div>
+              {showDelta && (
+                <div style={{ width: 44, textAlign: "center" }}>
+                  <DeltaArrow delta={delta} />
+                </div>
+              )}
+              <PlayerAvatar avatarId={r.avatarId} name={r.nickname} size={36} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>
+                  {r.nickname}
+                  {!r.isTemp && r.level && <span style={levelBadge}>Nv {r.level}</span>}
+                  {r.isTemp && <span style={{ marginLeft: 8, fontSize: 10, color: "#999", textTransform: "uppercase" }}>temp</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "#888" }}>{r.games} partidas · {r.wins} vitórias</div>
+              </div>
+              <div style={{ ...goldText, fontSize: 18 }}>{formatPoints(r.points)}</div>
             </div>
-            <div style={{ ...goldText, fontSize: 18 }}>{formatPoints(r.points)}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div style={{ marginTop: 24, textAlign: "center", color: "#777", fontSize: 12 }}>Família Poker Champions · gerado em {new Date().toLocaleDateString("pt-BR")}</div>
@@ -70,6 +116,7 @@ export function GameReport({ game }: { game: GameWithParticipants }) {
   const totalActions = game.participations.reduce((s, p) => s + (p.entries || 0) + (p.rebuys || 0), 0);
   const fm = getFM(totalActions);
   const sorted = [...game.participations].sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+  const cols = "50px 1fr 60px 60px 60px 100px 100px 90px";
   return (
     <div style={wrap}>
       <div style={headerStyle}>
@@ -88,22 +135,38 @@ export function GameReport({ game }: { game: GameWithParticipants }) {
       </div>
 
       <div style={{ background: "#141414", borderRadius: 16, border: "1px solid #2a2a2a", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 80px 80px 80px 100px", padding: "10px 16px", background: "#1f1810", color: "#d4a93d", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
-          <div>Pos</div><div>Jogador</div><div style={{ textAlign: "center" }}>Ent</div><div style={{ textAlign: "center" }}>Reb</div><div style={{ textAlign: "center" }}>KO</div><div style={{ textAlign: "right" }}>Pontos</div>
+        <div style={{ display: "grid", gridTemplateColumns: cols, padding: "10px 16px", background: "#1f1810", color: "#d4a93d", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div>Pos</div>
+          <div>Jogador</div>
+          <div style={{ textAlign: "center" }}>Ent</div>
+          <div style={{ textAlign: "center" }}>Reb</div>
+          <div style={{ textAlign: "center" }}>KO</div>
+          <div style={{ textAlign: "right" }}>Investido</div>
+          <div style={{ textAlign: "right" }}>Lucro</div>
+          <div style={{ textAlign: "right" }}>Pontos</div>
         </div>
         {sorted.map((p, i) => {
           const d = participantDisplay(p);
           const pts = p.position ? calcTournamentPoints({ totalPlayers: game.participations.length, position: p.position, totalActions, koPoints: p.ko_points || 0 }).total : 0;
+          const invested = Number(p.total_invested || 0);
+          const prize = Number((p as any).prize_won || 0);
+          const profit = prize - invested;
+          const profitColor = profit > 0 ? "#22c55e" : profit < 0 ? "#ef4444" : "#999";
           return (
-            <div key={p.id} style={{ display: "grid", gridTemplateColumns: "60px 1fr 80px 80px 80px 100px", padding: "10px 16px", borderTop: i ? "1px solid #222" : "none", alignItems: "center" }}>
+            <div key={p.id} style={{ display: "grid", gridTemplateColumns: cols, padding: "10px 16px", borderTop: i ? "1px solid #222" : "none", alignItems: "center" }}>
               <div style={{ ...goldText }}>{p.position ? `${p.position}º` : "—"}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <PlayerAvatar avatarId={d.avatarId} name={d.nickname} size={28} />
-                <span>{d.nickname}</span>
+                <span>
+                  {d.nickname}
+                  {!d.isTemp && (p as any).profile?.level && <span style={levelBadge}>Nv {(p as any).profile.level}</span>}
+                </span>
               </div>
               <div style={{ textAlign: "center" }}>{p.entries}</div>
               <div style={{ textAlign: "center" }}>{p.rebuys}</div>
               <div style={{ textAlign: "center" }}>{p.ko_points}</div>
+              <div style={{ textAlign: "right", color: "#bbb" }}>{formatBRL(invested)}</div>
+              <div style={{ textAlign: "right", color: profitColor, fontWeight: 700 }}>{formatBRL(profit)}</div>
               <div style={{ textAlign: "right", ...goldText }}>{formatPoints(pts)}</div>
             </div>
           );
