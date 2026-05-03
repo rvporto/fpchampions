@@ -300,6 +300,12 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                         <Button variant="outline" size="sm" onClick={() => setAddOpen((v) => !v)}>
                           <Plus className="size-4 mr-1" /> Adicionar Jogador
                         </Button>
+                        <Button variant="outline" size="sm" onClick={async () => {
+                          try { await renderAndCapture(<GameReport game={game} />, `${game.name.replace(/\s+/g, "_")}.jpg`); toast.success("Relatório baixado."); }
+                          catch (e: any) { toast.error(e.message); }
+                        }}>
+                          <FileText className="size-4 mr-1" /> Relatório
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
