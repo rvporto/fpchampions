@@ -119,14 +119,19 @@ export default function Ranking() {
             <CardContent className="space-y-2">
               {list.map((row, i) => {
                 const me = !row.isTemp && user?.id === row.id;
+                const delta = tab === "season" ? deltaMap?.get(rowKey(row)) : undefined;
                 return (
                   <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/40"}`}>
                     <span className="font-display text-lg w-8 text-center text-primary">{i + 1}º</span>
+                    {tab === "season" && (
+                      <span className="w-8 flex justify-center"><PositionDelta delta={delta} /></span>
+                    )}
                     <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={36} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm break-words line-clamp-2">
-                        {row.nickname}
-                        {row.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}
+                      <p className="font-medium text-sm break-words line-clamp-2 flex items-center gap-2 flex-wrap">
+                        <span>{row.nickname}</span>
+                        {!row.isTemp && <LevelBadge level={row.level} />}
+                        {row.isTemp && <span className="text-[10px] uppercase text-muted-foreground">temp</span>}
                       </p>
                       <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
                     </div>
