@@ -17,11 +17,34 @@ export default function Ranking() {
   const year = new Date().getFullYear();
   const [tab, setTab] = useState<"season" | "month">("season");
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
 
   const list = ranking ?? [];
   const podium = list.slice(0, 3);
+
+  const onRecalc = async () => {
+    setBusy(true);
+    try {
+      const r = await recalcRankingAndXp();
+      await qc.invalidateQueries();
+      toast.success(`Recalculado: ${r.participations} participações, ${r.profiles} perfis.`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const onReport = async () => {
+    if (list.length === 0) return toast.error("Sem dados para o relatório.");
+    const title = tab === "month" ? `Ranking ${MONTHS_PT[month - 1]} ${year}` : `Ranking Temporada ${year}`;
+    setBusy(true);
+    try {
+      await renderAndCapture(<RankingReport title={title} subtitle={`${list.length} jogadores`} rows={list} />, `${title.replace(/\s+/g, "_")}.jpg`);
+      toast.success("Relatório baixado.");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
 
   return (
     <div className="space-y-6">
@@ -30,9 +53,16 @@ export default function Ranking() {
           <h1 className="font-display text-3xl fpc-text-gold">Ranking — Temporada {year}</h1>
           <p className="text-sm text-muted-foreground">Pontuação acumulada por partidas finalizadas.</p>
         </div>
-        <Button onClick={() => toast.success("Relatório gerado (em breve)")} className="bg-gradient-gold text-primary-foreground">
-          <FileText className="size-4 mr-1" />Gerar Relatório
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button variant="outline" onClick={onRecalc} disabled={busy}>
+              <RefreshCw className={`size-4 mr-1 ${busy ? "animate-spin" : ""}`} />Recalcular
+            </Button>
+          )}
+          <Button onClick={onReport} disabled={busy} className="bg-gradient-gold text-primary-foreground">
+            <FileText className="size-4 mr-1" />Gerar Relatório
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
