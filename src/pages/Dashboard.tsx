@@ -14,7 +14,7 @@ import { useRanking, type RankingRow } from "@/hooks/useRanking";
 import { useGames } from "@/hooks/useGames";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
-import { useMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
+import { useAllMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -28,7 +28,7 @@ export default function Dashboard() {
   const { data: stats } = usePlayerStats(user?.id, year);
   const { data: lifetimeStats } = usePlayerStats(user?.id);
   const { data: champions = [] } = useSeasonChampions();
-  const { data: monthly = [] } = useMonthlyRankings(year);
+  const { data: monthly = [] } = useAllMonthlyRankings();
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
   if (!profile) return <Navigate to="/complete-profile" replace />;
