@@ -39,6 +39,8 @@ export default function Dashboard() {
       <StatsGrid
         games={stats?.games ?? 0}
         wins={stats?.wins ?? 0}
+        podiums={stats?.podiums ?? 0}
+        ko={stats?.ko ?? 0}
         points={stats?.points ?? 0}
         position={mySeasonIndex >= 0 ? mySeasonIndex + 1 : null}
       />
