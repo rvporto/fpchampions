@@ -68,11 +68,12 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={Target} label="Partidas" value={stats?.games ?? 0} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard icon={Target} label="Partidas Jogadas" value={stats?.games ?? 0} />
         <StatCard icon={Trophy} label="Vitórias" value={stats?.wins ?? 0} />
-        <StatCard icon={Sparkles} label="Pontos" value={formatPoints(stats?.points ?? 0)} />
-        <StatCard icon={Coins} label="Prêmios" value={formatBRL(Number((profile as any).lifetime_winnings || 0))} />
+        <StatCard icon={Award} label="Pódios" value={stats?.podiums ?? 0} />
+        <StatCard icon={Coins} label="Entradas (BI+RB)" value={(stats?.entries ?? 0) + (stats?.rebuys ?? 0)} />
+        <StatCard icon={Swords} label="KOs" value={stats?.ko ?? 0} />
       </div>
 
       <Card className="fpc-card">
