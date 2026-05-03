@@ -59,6 +59,7 @@ export interface DbParticipation {
   ko_points: number;
   ranking_points: number;
   xp_earned: number;
+  prize_won: number;
 }
 
 export interface GameWithParticipants extends DbGame {
