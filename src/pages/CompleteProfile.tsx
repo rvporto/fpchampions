@@ -11,16 +11,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { InvalidGenderDialog } from "@/components/InvalidGenderDialog";
 
 export default function CompleteProfile() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [genderWarn, setGenderWarn] = useState(false);
 
   const [nickname, setNickname] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [gender, setGender] = useState<"masculino" | "feminino" | "outro">("masculino");
+  const [gender, setGender] = useState<"masculino" | "feminino">("masculino");
   const [avatar, setAvatar] = useState<string>("a1");
 
   useEffect(() => {
@@ -29,7 +31,9 @@ export default function CompleteProfile() {
       setNickname(profile.nickname ?? "");
       setFullName(profile.full_name ?? "");
       setPhone(profile.phone ?? "");
-      if (profile.gender) setGender(profile.gender as any);
+      if (profile.gender === "masculino" || profile.gender === "feminino") {
+        setGender(profile.gender);
+      }
       if (profile.avatar_url) setAvatar(profile.avatar_url);
       if (profile.profile_completed) navigate("/", { replace: true });
     }
@@ -101,7 +105,7 @@ export default function CompleteProfile() {
 
             <div>
               <Label className="mb-2 block">Gênero</Label>
-              <RadioGroup value={gender} onValueChange={(v) => setGender(v as any)} className="flex gap-4">
+              <RadioGroup value={gender} onValueChange={(v) => { if (v === "outro") { setGenderWarn(true); return; } setGender(v as any); }} className="flex gap-4">
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="masculino" id="g-m" /><Label htmlFor="g-m" className="cursor-pointer">Masculino</Label>
                 </div>
@@ -113,6 +117,17 @@ export default function CompleteProfile() {
                 </div>
               </RadioGroup>
             </div>
+
+            <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
+              {busy ? <Loader2 className="size-4 animate-spin" /> : "Salvar e entrar"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      <InvalidGenderDialog open={genderWarn} onOpenChange={setGenderWarn} />
+    </div>
+  );
+}
 
             <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
               {busy ? <Loader2 className="size-4 animate-spin" /> : "Salvar e entrar"}
