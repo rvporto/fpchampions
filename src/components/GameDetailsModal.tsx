@@ -186,12 +186,13 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
           <div className="flex justify-center py-12"><Loader2 className="size-8 text-primary animate-spin" /></div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <Stat icon={<Calendar className="size-3.5" />} label="Data" value={formatDateTime(game.date)} />
-              <Stat icon={<Users className="size-3.5" />} label="Jogadores" value={`${totals.totalPlayers}`} />
-              <Stat icon={<Coins className="size-3.5" />} label="Pote" value={formatBRL(totals.totalPot)} />
-              <Stat icon={<Trophy className="size-3.5" />} label={`Ações (FM ${totals.fm.toFixed(1)})`} value={`${totals.totalActions}`} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <BigStat label="Buy-in" value={formatBRL(Number(game.buy_in))} />
+              <BigStat label="Rebuy" value={formatBRL(Number(game.rebuy_value))} />
+              <BigStat label="Jogadores" value={`${totals.totalPlayers}`} />
+              <BigStat label="Pote total" value={formatBRL(totals.totalPot)} />
             </div>
+            <p className="text-xs text-muted-foreground mt-3">{formatDateTime(game.date)} · Temporada {game.season_year}</p>
 
             <Tabs defaultValue="resultados" className="mt-4">
               <TabsList>
@@ -200,7 +201,53 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
               </TabsList>
 
               <TabsContent value="resultados" className="space-y-4">
-                <div className="overflow-x-auto rounded-xl border border-border">
+                {/* Mobile: per-player cards */}
+                <div className="sm:hidden space-y-3">
+                  {game.participations.map((p) => {
+                    const display = participantDisplay(p);
+                    const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
+                    const bd = calcPoints(r);
+                    return (
+                      <div key={p.id} className="fpc-card rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <PlayerAvatar avatarId={display.avatarId} name={display.nickname} size={40} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium break-words">{display.nickname}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Pos. {r.position ?? "—"} · <span className="text-primary font-medium">{r.position ? bd.total : 0} pts</span> · {formatBRL(r.prize_won)}
+                            </p>
+                          </div>
+                          {isAdmin && (
+                            <Button size="icon" variant="ghost" onClick={() => onRemove(p.id)}>
+                              <X className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FieldNum label="Pos." value={r.position ?? ""} disabled={!isAdmin}
+                            onChange={(v) => setRow(p.id, { position: v === "" ? null : parseInt(v) })} placeholder="—" />
+                          <FieldNum label="Entradas" value={r.entries} disabled={!isAdmin}
+                            onChange={(v) => setRow(p.id, { entries: parseInt(v || "0") })} />
+                          <FieldNum label="Rebuys" value={r.rebuys} disabled={!isAdmin}
+                            onChange={(v) => setRow(p.id, { rebuys: parseInt(v || "0") })} />
+                          <FieldNum label="KOs" value={r.ko_points} disabled={!isAdmin}
+                            onChange={(v) => setRow(p.id, { ko_points: parseInt(v || "0") })} />
+                          <div className="col-span-2">
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Prêmio (R$)</Label>
+                            <Input type="number" step="0.01" disabled={!isAdmin} value={r.prize_won}
+                              onChange={(e) => setRow(p.id, { prize_won: parseFloat(e.target.value || "0") })} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {game.participations.length === 0 && (
+                    <p className="text-center text-muted-foreground py-6 text-sm">Sem jogadores.</p>
+                  )}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto rounded-xl border border-border">
                   <table className="w-full text-sm">
                     <thead className="text-xs uppercase text-muted-foreground bg-secondary/30">
                       <tr>
