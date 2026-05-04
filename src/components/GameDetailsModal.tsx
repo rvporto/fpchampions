@@ -438,3 +438,21 @@ function Stat({ icon, label, value }: any) {
     </div>
   );
 }
+
+function BigStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="fpc-card rounded-2xl p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="font-display text-lg fpc-text-gold mt-1">{value}</p>
+    </div>
+  );
+}
+
+function FieldNum({ label, value, onChange, disabled, placeholder }: { label: string; value: any; onChange: (v: string) => void; disabled?: boolean; placeholder?: string }) {
+  return (
+    <div>
+      <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Input type="number" disabled={disabled} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
