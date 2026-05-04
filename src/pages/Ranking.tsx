@@ -113,6 +113,9 @@ export default function Ranking() {
                             iconColor: "text-primary-foreground",
                             icon: Crown,
                             accent: "text-warning",
+                            cardBorder: "border-warning",
+                            cardBg: "bg-[linear-gradient(180deg,hsl(45_90%_55%/0.35)_0%,hsl(45_90%_55%/0.08)_100%)] shadow-[0_0_24px_-4px_hsl(45_90%_55%/0.55)]",
+                            heightClass: "min-h-[150px] sm:min-h-[230px]",
                           }
                         : place === 2
                         ? {
@@ -121,6 +124,9 @@ export default function Ranking() {
                             iconColor: "text-foreground/80",
                             icon: Medal,
                             accent: "text-muted-foreground",
+                            cardBorder: "border-[hsl(0_0%_75%)]",
+                            cardBg: "bg-[linear-gradient(180deg,hsl(0_0%_80%/0.30)_0%,hsl(0_0%_80%/0.05)_100%)] shadow-[0_0_20px_-6px_hsl(0_0%_80%/0.45)]",
+                            heightClass: "min-h-[125px] sm:min-h-[195px]",
                           }
                         : {
                             ring: "ring-tournament",
@@ -128,16 +134,19 @@ export default function Ranking() {
                             iconColor: "text-tournament",
                             icon: AwardIcon,
                             accent: "text-tournament",
+                            cardBorder: "border-[hsl(25_70%_45%)]",
+                            cardBg: "bg-[linear-gradient(180deg,hsl(25_70%_45%/0.32)_0%,hsl(25_70%_45%/0.06)_100%)] shadow-[0_0_18px_-6px_hsl(25_70%_45%/0.5)]",
+                            heightClass: "min-h-[105px] sm:min-h-[170px]",
                           };
                     const Icon = cfg.icon;
-                    const avatarSize = place === 1 ? 96 : 80;
-                    const avatarSizeMobile = place === 1 ? 48 : 44;
+                    const avatarSize = place === 1 ? 96 : place === 2 ? 80 : 72;
+                    const avatarSizeMobile = place === 1 ? 52 : place === 2 ? 44 : 40;
                     return (
                       <div key={row.id} className="relative flex flex-col items-center pt-5 sm:pt-7">
                         <div className={`absolute top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full sm:h-12 sm:w-12 ${cfg.badgeBg}`}>
                           <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${cfg.iconColor}`} />
                         </div>
-                        <div className="w-full rounded-2xl border-2 p-2.5 sm:p-4 sm:pt-8 transition-all border-tournament/60 bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)] px-0 py-0 pb-0 pt-[20px]">
+                        <div className={`w-full rounded-2xl border-2 px-0 py-0 pb-0 pt-[20px] sm:p-4 sm:pt-8 transition-all ${cfg.cardBorder} ${cfg.cardBg} ${cfg.heightClass}`}>
                           <div className="flex justify-center">
                             <div className={`rounded-full ring-2 ring-offset-2 ring-offset-background ${cfg.ring}`}>
                               <span className="hidden sm:block">
