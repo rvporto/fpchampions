@@ -236,14 +236,19 @@ function ExpenseDialog({ authorName }: { authorName: string | null }) {
 function CloseMonthButton({ year, month, prize }: { year: number; month: number; prize: number }) {
   const [open, setOpen] = useState(false);
   const { data: ranking = [] } = useRanking({ year, month });
-  const userTop = ranking.filter((r) => !r.isTemp);
-  const [winner, setWinner] = useState<string>("");
+  const leader = ranking[0];
   const close = useCloseMonth();
 
   const submit = async () => {
-    if (!winner) return toast.error("Escolha o vencedor.");
+    if (!leader) return toast.error("Sem líder no mês.");
     try {
-      await close.mutateAsync({ year, month, champion_user_id: winner, prize_amount: prize });
+      await close.mutateAsync({
+        year,
+        month,
+        champion_user_id: leader.isTemp ? null : leader.id,
+        champion_temp_player_id: leader.isTemp ? leader.id : null,
+        prize_amount: prize,
+      });
       toast.success(`${MONTHS_PT[month - 1]} encerrado.`);
       setOpen(false);
     } catch (e: any) { toast.error(e.message); }
@@ -257,23 +262,23 @@ function CloseMonthButton({ year, month, prize }: { year: number; month: number;
       <DialogContent>
         <DialogHeader><DialogTitle className="font-display fpc-text-gold">Encerrar {MONTHS_PT[month - 1]} / {year}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
-          <p>Top do mês receberá <strong className="fpc-text-gold">{formatBRL(prize)}</strong> (Rake Mês acumulado).</p>
-          <div>
-            <Label>Vencedor</Label>
-            <Select value={winner} onValueChange={setWinner}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {userTop.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.nickname} — {r.points} pts</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {userTop.length === 0 && <p className="text-xs text-muted-foreground mt-1">Apenas usuários cadastrados podem receber prêmio. Vincule jogadores temporários antes.</p>}
-          </div>
+          {leader ? (
+            <>
+              <p>Vencedor automático: <strong className="fpc-text-gold">{leader.nickname}</strong>{leader.isTemp ? " (temporário)" : ""} — {leader.points} pts.</p>
+              <p>Receberá <strong className="fpc-text-gold">{formatBRL(prize)}</strong> (Rake Mês acumulado).</p>
+              {leader.isTemp && (
+                <p className="text-xs text-muted-foreground">
+                  Como o líder é jogador temporário, prêmio, vitória do mês, XP e conquistas ficarão registrados e serão herdados automaticamente quando o jogador for vinculado a uma conta.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-muted-foreground">Sem participações neste mês.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button className="bg-gradient-gold text-primary-foreground" onClick={submit} disabled={close.isPending}>Confirmar</Button>
+          <Button className="bg-gradient-gold text-primary-foreground" onClick={submit} disabled={close.isPending || !leader}>Confirmar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
