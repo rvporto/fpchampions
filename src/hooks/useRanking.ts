@@ -94,18 +94,28 @@ export function rowKey(r: { id: string; isTemp: boolean }) {
 
 /**
  * delta > 0 = subiu, < 0 = desceu, 0 = manteve, null = novo.
- * Compara ranking da temporada (todos os meses) com ranking até o mês anterior ao atual.
+ * Compara ranking atual da temporada vs ranking ANTES da última partida finalizada.
+ * Assim as setas refletem o efeito do último jogo registrado.
  */
 export function useSeasonRankingDelta(year: number) {
-  const currentMonth = new Date().getMonth() + 1;
   return useQuery({
-    queryKey: ["ranking-delta", year, currentMonth],
+    queryKey: ["ranking-delta", year, "last-game"],
     queryFn: async () => {
       const delta = new Map<string, number | null>();
-      if (currentMonth <= 1) return delta;
+      // Pega a última partida finalizada da temporada
+      const { data: lastGames } = await supabase
+        .from("games")
+        .select("id, date")
+        .eq("season_year", year)
+        .eq("status", "finished")
+        .order("date", { ascending: false })
+        .limit(1);
+      const lastGameId = lastGames?.[0]?.id as string | undefined;
+      if (!lastGameId) return delta;
+
       const [current, previous] = await Promise.all([
         fetchRanking({ year }),
-        fetchRanking({ year, monthMax: currentMonth - 1 }),
+        fetchRanking({ year, excludeGameIds: [lastGameId] }),
       ]);
       const prevPos = new Map<string, number>();
       previous.forEach((r, i) => prevPos.set(rowKey(r), i + 1));
