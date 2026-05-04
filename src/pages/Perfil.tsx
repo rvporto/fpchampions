@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { InvalidGenderDialog } from "@/components/InvalidGenderDialog";
 import { levelFromXp } from "@/lib/xpSystem";
 import { formatBRL, formatDate, formatPoints, ordinal } from "@/lib/format";
 import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut, Award, Swords } from "lucide-react";
