@@ -128,13 +128,3 @@ export default function CompleteProfile() {
     </div>
   );
 }
-
-            <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
-              {busy ? <Loader2 className="size-4 animate-spin" /> : "Salvar e entrar"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
