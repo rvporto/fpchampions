@@ -17,19 +17,24 @@ interface Opts {
   year: number;
   month?: number;
   monthMax?: number;
+  excludeGameIds?: string[];
 }
 
-async function fetchRanking({ year, month, monthMax }: Opts): Promise<RankingRow[]> {
+async function fetchRanking({ year, month, monthMax, excludeGameIds }: Opts): Promise<RankingRow[]> {
   let q = supabase
     .from("games")
-    .select("id, season_year, month, status")
+    .select("id, season_year, month, status, date")
     .eq("season_year", year)
     .eq("status", "finished");
   if (month) q = q.eq("month", month);
   if (monthMax) q = q.lte("month", monthMax);
   const { data: games, error } = await q;
   if (error) throw error;
-  const gameIds = (games ?? []).map((g: any) => g.id as string);
+  let gameIds = (games ?? []).map((g: any) => g.id as string);
+  if (excludeGameIds && excludeGameIds.length) {
+    const exclude = new Set(excludeGameIds);
+    gameIds = gameIds.filter((id) => !exclude.has(id));
+  }
   if (gameIds.length === 0) return [];
 
   const { data: parts, error: e2 } = await supabase
