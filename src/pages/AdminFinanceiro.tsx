@@ -12,7 +12,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useGames } from "@/hooks/useGames";
 import { useExpenses, useCreateExpense, useMonthlyRankings, useSeasonChampions, useCloseMonth, useCloseSeason, useIndicateAs } from "@/hooks/useFinance";
 import { useRanking } from "@/hooks/useRanking";
-import { useProfiles } from "@/hooks/useGames";
+import { useProfiles, useTempPlayers } from "@/hooks/useGames";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminFinanceiro() {
@@ -23,6 +23,7 @@ export default function AdminFinanceiro() {
   const { data: monthlyClosed = [] } = useMonthlyRankings(year);
   const { data: champions = [] } = useSeasonChampions();
   const { data: profiles = [] } = useProfiles();
+  const { data: tempPlayers = [] } = useTempPlayers();
 
   const finishedYear = games.filter((g) => g.status === "finished" && g.season_year === year);
 
@@ -82,6 +83,11 @@ export default function AdminFinanceiro() {
               {byMonth.map((m) => {
                 const empty = m.rakeAs + m.rakeMonth + m.prize === 0;
                 const champ = m.closed ? profiles.find((p) => p.id === m.closed?.champion_user_id) : null;
+                const champTemp = m.closed && (m.closed as any).champion_temp_player_id
+                  ? tempPlayers.find((t) => t.id === (m.closed as any).champion_temp_player_id)
+                  : null;
+                const champName = champ?.nickname ?? champTemp?.nickname ?? "—";
+                const champAvatar = champ?.avatar_url ?? champTemp?.avatar_url ?? "a1";
                 return (
                   <tr key={m.month} className={`border-b border-border/40 ${empty && !m.closed ? "opacity-40" : ""}`}>
                     <td className="py-2 px-2 font-medium">{MONTHS_PT[m.month - 1]}</td>
@@ -91,8 +97,8 @@ export default function AdminFinanceiro() {
                     <td className="text-right px-2">
                       {m.closed ? (
                         <div className="flex items-center justify-end gap-2">
-                          {champ && <PlayerAvatar avatarId={champ.avatar_url ?? "a1"} name={champ.nickname ?? ""} size={20} />}
-                          <span className="text-xs">{champ?.nickname ?? "—"} · {formatBRL(Number(m.closed.prize_amount))}</span>
+                          {(champ || champTemp) && <PlayerAvatar avatarId={champAvatar} name={champName} size={20} />}
+                          <span className="text-xs">{champName}{champTemp && !champ ? " (temp)" : ""} · {formatBRL(Number(m.closed.prize_amount))}</span>
                         </div>
                       ) : empty ? "—" : <span className="text-xs text-muted-foreground">Aberto</span>}
                     </td>
@@ -230,14 +236,19 @@ function ExpenseDialog({ authorName }: { authorName: string | null }) {
 function CloseMonthButton({ year, month, prize }: { year: number; month: number; prize: number }) {
   const [open, setOpen] = useState(false);
   const { data: ranking = [] } = useRanking({ year, month });
-  const userTop = ranking.filter((r) => !r.isTemp);
-  const [winner, setWinner] = useState<string>("");
+  const leader = ranking[0];
   const close = useCloseMonth();
 
   const submit = async () => {
-    if (!winner) return toast.error("Escolha o vencedor.");
+    if (!leader) return toast.error("Sem líder no mês.");
     try {
-      await close.mutateAsync({ year, month, champion_user_id: winner, prize_amount: prize });
+      await close.mutateAsync({
+        year,
+        month,
+        champion_user_id: leader.isTemp ? null : leader.id,
+        champion_temp_player_id: leader.isTemp ? leader.id : null,
+        prize_amount: prize,
+      });
       toast.success(`${MONTHS_PT[month - 1]} encerrado.`);
       setOpen(false);
     } catch (e: any) { toast.error(e.message); }
@@ -251,23 +262,23 @@ function CloseMonthButton({ year, month, prize }: { year: number; month: number;
       <DialogContent>
         <DialogHeader><DialogTitle className="font-display fpc-text-gold">Encerrar {MONTHS_PT[month - 1]} / {year}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
-          <p>Top do mês receberá <strong className="fpc-text-gold">{formatBRL(prize)}</strong> (Rake Mês acumulado).</p>
-          <div>
-            <Label>Vencedor</Label>
-            <Select value={winner} onValueChange={setWinner}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {userTop.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.nickname} — {r.points} pts</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {userTop.length === 0 && <p className="text-xs text-muted-foreground mt-1">Apenas usuários cadastrados podem receber prêmio. Vincule jogadores temporários antes.</p>}
-          </div>
+          {leader ? (
+            <>
+              <p>Vencedor automático: <strong className="fpc-text-gold">{leader.nickname}</strong>{leader.isTemp ? " (temporário)" : ""} — {leader.points} pts.</p>
+              <p>Receberá <strong className="fpc-text-gold">{formatBRL(prize)}</strong> (Rake Mês acumulado).</p>
+              {leader.isTemp && (
+                <p className="text-xs text-muted-foreground">
+                  Como o líder é jogador temporário, prêmio, vitória do mês, XP e conquistas ficarão registrados e serão herdados automaticamente quando o jogador for vinculado a uma conta.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-muted-foreground">Sem participações neste mês.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button className="bg-gradient-gold text-primary-foreground" onClick={submit} disabled={close.isPending}>Confirmar</Button>
+          <Button className="bg-gradient-gold text-primary-foreground" onClick={submit} disabled={close.isPending || !leader}>Confirmar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
