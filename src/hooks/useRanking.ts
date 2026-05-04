@@ -17,19 +17,24 @@ interface Opts {
   year: number;
   month?: number;
   monthMax?: number;
+  excludeGameIds?: string[];
 }
 
-async function fetchRanking({ year, month, monthMax }: Opts): Promise<RankingRow[]> {
+async function fetchRanking({ year, month, monthMax, excludeGameIds }: Opts): Promise<RankingRow[]> {
   let q = supabase
     .from("games")
-    .select("id, season_year, month, status")
+    .select("id, season_year, month, status, date")
     .eq("season_year", year)
     .eq("status", "finished");
   if (month) q = q.eq("month", month);
   if (monthMax) q = q.lte("month", monthMax);
   const { data: games, error } = await q;
   if (error) throw error;
-  const gameIds = (games ?? []).map((g: any) => g.id as string);
+  let gameIds = (games ?? []).map((g: any) => g.id as string);
+  if (excludeGameIds && excludeGameIds.length) {
+    const exclude = new Set(excludeGameIds);
+    gameIds = gameIds.filter((id) => !exclude.has(id));
+  }
   if (gameIds.length === 0) return [];
 
   const { data: parts, error: e2 } = await supabase
@@ -89,18 +94,28 @@ export function rowKey(r: { id: string; isTemp: boolean }) {
 
 /**
  * delta > 0 = subiu, < 0 = desceu, 0 = manteve, null = novo.
- * Compara ranking da temporada (todos os meses) com ranking até o mês anterior ao atual.
+ * Compara ranking atual da temporada vs ranking ANTES da última partida finalizada.
+ * Assim as setas refletem o efeito do último jogo registrado.
  */
 export function useSeasonRankingDelta(year: number) {
-  const currentMonth = new Date().getMonth() + 1;
   return useQuery({
-    queryKey: ["ranking-delta", year, currentMonth],
+    queryKey: ["ranking-delta", year, "last-game"],
     queryFn: async () => {
       const delta = new Map<string, number | null>();
-      if (currentMonth <= 1) return delta;
+      // Pega a última partida finalizada da temporada
+      const { data: lastGames } = await supabase
+        .from("games")
+        .select("id, date")
+        .eq("season_year", year)
+        .eq("status", "finished")
+        .order("date", { ascending: false })
+        .limit(1);
+      const lastGameId = lastGames?.[0]?.id as string | undefined;
+      if (!lastGameId) return delta;
+
       const [current, previous] = await Promise.all([
         fetchRanking({ year }),
-        fetchRanking({ year, monthMax: currentMonth - 1 }),
+        fetchRanking({ year, excludeGameIds: [lastGameId] }),
       ]);
       const prevPos = new Map<string, number>();
       previous.forEach((r, i) => prevPos.set(rowKey(r), i + 1));
