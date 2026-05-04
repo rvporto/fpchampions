@@ -178,59 +178,113 @@ export default function Estatisticas() {
           <TabsList>{list.map((y) => <TabsTrigger key={y} value={String(y)}>{y}</TabsTrigger>)}</TabsList>
         </Tabs>
       </div>
-      <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold">Visão Geral por Jogador — {year}</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto">
-          {(gLoading || pLoading) ? <div className="flex justify-center py-10"><Loader2 className="size-6 text-primary animate-spin" /></div> : (
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground border-b border-border">
-                <tr>
-                  <SortTh k="nickname" label="Jogador" align="left" />
-                  <SortTh k="games" label="Partidas" />
-                  <SortTh k="wins" label="Vitórias" />
-                  <SortTh k="kos" label="KOs" />
-                  <SortTh k="entriesTotal" label="Entradas" />
-                  <SortTh k="points" label="Pontos" />
-                  <SortTh k="avg" label="Média" />
-                  <SortTh k="prize" label="Prêmio" />
-                  <SortTh k="invested" label="Investido" />
-                  <SortTh k="profit" label="Lucro" />
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((s) => {
-                  const profit = s.prize - s.invested;
-                  return (
-                    <tr key={s.key} className="border-b border-border/40">
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-2">
-                          <PlayerAvatar avatarId={s.avatarId} name={s.nickname} size={28} />
-                          <span className="break-words line-clamp-2">{s.nickname}{s.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}</span>
-                        </div>
-                      </td>
-                      <td className="text-right px-2">{s.games}</td>
-                      <td className="text-right px-2">{s.wins}</td>
-                      <td className="text-right px-2">{s.kos}</td>
-                      <td className="text-right px-2">
-                        <div className="font-medium">{s.entries + s.rebuys}</div>
-                        <div className="text-[10px] text-muted-foreground">{s.entries} BI · {s.rebuys} RB</div>
-                      </td>
-                      <td className="text-right px-2 text-primary font-display">{formatPoints(s.points)}</td>
-                      <td className="text-right px-2">{formatPoints(s.games ? Math.round(s.points / s.games) : 0)}</td>
-                      <td className="text-right px-2">{formatBRL(s.prize)}</td>
-                      <td className="text-right px-2">{formatBRL(s.invested)}</td>
-                      <td className={`text-right px-2 font-medium ${profit > 0 ? "text-success" : profit < 0 ? "text-destructive" : ""}`}>{formatBRL(profit)}</td>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="months">Meses Vencidos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <Card className="fpc-card">
+            <CardHeader><CardTitle className="font-display fpc-text-gold">Visão Geral por Jogador — {year}</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              {(gLoading || pLoading) ? <div className="flex justify-center py-10"><Loader2 className="size-6 text-primary animate-spin" /></div> : (
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase text-muted-foreground border-b border-border">
+                    <tr>
+                      <SortTh k="nickname" label="Jogador" align="left" />
+                      <SortTh k="games" label="Partidas" />
+                      <SortTh k="wins" label="Vitórias" />
+                      <SortTh k="kos" label="KOs" />
+                      <SortTh k="entriesTotal" label="Entradas" />
+                      <SortTh k="points" label="Pontos" />
+                      <SortTh k="avg" label="Média" />
+                      <SortTh k="prize" label="Prêmio" />
+                      <SortTh k="invested" label="Investido" />
+                      <SortTh k="profit" label="Lucro" />
                     </tr>
-                  );
-                })}
-                {sorted.length === 0 && (
-                  <tr><td colSpan={10} className="text-center text-muted-foreground py-8 text-sm">Sem partidas finalizadas nesta temporada.</td></tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+                  </thead>
+                  <tbody>
+                    {sorted.map((s) => {
+                      const profit = s.prize - s.invested;
+                      return (
+                        <tr key={s.key} className="border-b border-border/40">
+                          <td className="py-2 px-2">
+                            <div className="flex items-center gap-2">
+                              <PlayerAvatar avatarId={s.avatarId} name={s.nickname} size={28} />
+                              <span className="break-words line-clamp-2">{s.nickname}{s.isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}</span>
+                            </div>
+                          </td>
+                          <td className="text-right px-2">{s.games}</td>
+                          <td className="text-right px-2">{s.wins}</td>
+                          <td className="text-right px-2">{s.kos}</td>
+                          <td className="text-right px-2">
+                            <div className="font-medium">{s.entries + s.rebuys}</div>
+                            <div className="text-[10px] text-muted-foreground">{s.entries} BI · {s.rebuys} RB</div>
+                          </td>
+                          <td className="text-right px-2 text-primary font-display">{formatPoints(s.points)}</td>
+                          <td className="text-right px-2">{formatPoints(s.games ? Math.round(s.points / s.games) : 0)}</td>
+                          <td className="text-right px-2">{formatBRL(s.prize)}</td>
+                          <td className="text-right px-2">{formatBRL(s.invested)}</td>
+                          <td className={`text-right px-2 font-medium ${profit > 0 ? "text-success" : profit < 0 ? "text-destructive" : ""}`}>{formatBRL(profit)}</td>
+                        </tr>
+                      );
+                    })}
+                    {sorted.length === 0 && (
+                      <tr><td colSpan={10} className="text-center text-muted-foreground py-8 text-sm">Sem partidas finalizadas nesta temporada.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="months">
+          <Card className="fpc-card">
+            <CardHeader><CardTitle className="font-display fpc-text-gold">Meses Vencidos — {year}</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              {monthlyRankings.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8 text-sm">Nenhum mês encerrado nesta temporada.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase text-muted-foreground border-b border-border">
+                    <tr>
+                      <th className="py-2 px-2 text-left">Mês</th>
+                      <th className="py-2 px-2 text-left">Campeão</th>
+                      <th className="py-2 px-2 text-right">Prêmio</th>
+                      <th className="py-2 px-2 text-right">Encerrado em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...monthlyRankings].sort((a, b) => a.month - b.month).map((mr) => {
+                      const isTemp = !!mr.champion_temp_player_id;
+                      const m: any = isTemp
+                        ? meta?.temp.get(mr.champion_temp_player_id!)
+                        : mr.champion_user_id ? meta?.prof.get(mr.champion_user_id) : null;
+                      const nickname = m?.nickname ?? "—";
+                      const avatarId = m?.avatar_url ?? "a1";
+                      return (
+                        <tr key={mr.id} className="border-b border-border/40">
+                          <td className="py-2 px-2 font-medium">{MONTH_NAMES[mr.month - 1] ?? mr.month}</td>
+                          <td className="py-2 px-2">
+                            <div className="flex items-center gap-2">
+                              {m ? <PlayerAvatar avatarId={avatarId} name={nickname} size={28} /> : <Trophy className="size-5 text-primary" />}
+                              <span className="break-words">{nickname}{isTemp && <span className="ml-2 text-[10px] uppercase text-muted-foreground">temp</span>}</span>
+                            </div>
+                          </td>
+                          <td className="text-right px-2 text-success font-medium">{formatBRL(Number(mr.prize_amount || 0))}</td>
+                          <td className="text-right px-2 text-muted-foreground">{new Date(mr.closed_at).toLocaleDateString("pt-BR")}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
