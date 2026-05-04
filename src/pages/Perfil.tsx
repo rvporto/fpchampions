@@ -142,6 +142,8 @@ function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onO
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("a1");
+  const [gender, setGender] = useState<"masculino" | "feminino">("masculino");
+  const [genderWarn, setGenderWarn] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -150,6 +152,9 @@ function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onO
       setFullName(profile.full_name ?? "");
       setPhone(profile.phone ?? "");
       setAvatar(profile.avatar_url ?? "a1");
+      if (profile.gender === "masculino" || profile.gender === "feminino") {
+        setGender(profile.gender);
+      }
     }
   }, [open, profile]);
 
@@ -164,6 +169,7 @@ function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onO
         full_name: fullName.trim(),
         phone: phone.trim() || null,
         avatar_url: avatar,
+        gender,
       })
       .eq("id", user.id);
     setBusy(false);
