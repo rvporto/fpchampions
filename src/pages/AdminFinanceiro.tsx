@@ -23,6 +23,7 @@ export default function AdminFinanceiro() {
   const { data: monthlyClosed = [] } = useMonthlyRankings(year);
   const { data: champions = [] } = useSeasonChampions();
   const { data: profiles = [] } = useProfiles();
+  const { data: tempPlayers = [] } = useTempPlayers();
 
   const finishedYear = games.filter((g) => g.status === "finished" && g.season_year === year);
 
