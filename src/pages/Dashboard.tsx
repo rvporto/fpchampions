@@ -21,15 +21,38 @@ export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const today = new Date();
   const year = today.getFullYear();
-  const month = today.getMonth() + 1;
 
-  const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month });
   const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
   const { data: games = [] } = useGames();
   const { data: stats } = usePlayerStats(user?.id, year);
   const { data: lifetimeStats } = usePlayerStats(user?.id);
   const { data: champions = [] } = useSeasonChampions();
   const { data: monthly = [] } = useAllMonthlyRankings();
+
+  // Mês a exibir: o mês da última partida finalizada do ano corrente,
+  // ou — se não houver — o último mês encerrado.
+  const finishedGames = useMemo(
+    () => games.filter((g) => g.status === "finished" && g.season_year === year),
+    [games, year]
+  );
+  const lastGameMonth = useMemo(() => {
+    if (finishedGames.length === 0) return null;
+    return finishedGames.reduce((max, g) => Math.max(max, g.month), 0);
+  }, [finishedGames]);
+  const lastClosedMonth = useMemo(() => {
+    const ms = monthly.filter((m) => m.season_year === year).map((m) => m.month);
+    return ms.length ? Math.max(...ms) : null;
+  }, [monthly, year]);
+  const displayMonth = lastGameMonth ?? lastClosedMonth ?? today.getMonth() + 1;
+  const closedRecord = useMemo(
+    () => monthly.find((m) => m.season_year === year && m.month === displayMonth) ?? null,
+    [monthly, year, displayMonth]
+  );
+  // Considera "encerrado" somente se não houve nenhuma partida em mês posterior.
+  const isClosed = !!closedRecord && (lastGameMonth === null || lastGameMonth <= displayMonth);
+
+  const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month: displayMonth });
+
   const computedXp = useMemo(() => {
     if (!user || !lifetimeStats) return profile?.xp ?? 0;
     const achievements = computeAchievements({
@@ -65,9 +88,12 @@ export default function Dashboard() {
         ranking={monthlyRanking}
         myIndex={myMonthIndex}
         year={year}
-        month={month}
+        month={displayMonth}
         loading={lr1}
         currentUserId={user?.id}
+        closed={isClosed}
+        closedRecord={closedRecord}
+        monthlyRankings={monthly}
       />
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -124,10 +150,11 @@ function StatsGrid({ games, wins, podiums, ko, points, position }: { games: numb
   );
 }
 
-function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUserId }: any) {
+function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUserId, closed, closedRecord }: any) {
   const top5 = ranking.slice(0, 5);
   const showMeRow = myIndex >= 5;
   const meRow = showMeRow ? ranking[myIndex] : null;
+  const winner = ranking[0] as RankingRow | undefined;
 
   return (
     <Card className="fpc-card overflow-hidden">
@@ -136,7 +163,14 @@ function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUse
           <CardTitle className="font-display fpc-text-gold flex items-center gap-2">
             <Flame className="size-5 text-tournament" /> Ranking do Mês
           </CardTitle>
-          <p className="text-xs text-muted-foreground">{MONTHS_PT[month - 1]} de {year}</p>
+          <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+            <span>{MONTHS_PT[month - 1]} de {year}</span>
+            {closed && (
+              <span className="fpc-chip text-[10px] bg-tournament/20 text-tournament border-tournament/40">
+                Encerrado
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => toast.info("Relatório em breve")}>
@@ -146,6 +180,21 @@ function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUse
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
+        {closed && winner && (
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2 border border-warning/40 bg-warning/10">
+            <Crown className="size-5 text-warning shrink-0" />
+            <PlayerAvatar avatarId={winner.avatarId} name={winner.nickname} size={36} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-warning">Campeão do mês</p>
+              <p className="font-display text-base break-words">{winner.nickname}</p>
+            </div>
+            {closedRecord?.prize_amount > 0 && (
+              <p className="font-display text-primary text-sm shrink-0">
+                R$ {Number(closedRecord.prize_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </p>
+            )}
+          </div>
+        )}
         {loading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
         {!loading && top5.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma partida finalizada neste mês ainda.</p>}
         {top5.map((row: RankingRow, idx: number) => (

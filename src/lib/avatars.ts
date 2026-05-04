@@ -6,10 +6,10 @@ import a5 from "@/assets/avatars/avatar-5.jpg";
 
 export const FIXED_AVATARS = [
   { id: "a1", url: a1, label: "Tubarão" },
-  { id: "a2", url: a2, label: "Dama" },
+  { id: "a2", url: a2, label: "Cavalheiro" },
   { id: "a3", url: a3, label: "Veterano" },
   { id: "a4", url: a4, label: "Prodígio" },
-  { id: "a5", url: a5, label: "Rainha" },
+  { id: "a5", url: a5, label: "Galã" },
 ] as const;
 
 export const DEFAULT_AVATAR = a1;
