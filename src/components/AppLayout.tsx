@@ -82,16 +82,54 @@ function NavItem({ to, label, icon: Icon, admin }: { to: string; label: string; 
   );
 }
 
+function Ornament({ side }: { side: "left" | "right" }) {
+  return (
+    <div className={cn("flex-1 flex items-center gap-2", side === "right" && "scale-x-[-1]")}>
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/60 to-primary/80" />
+      <svg width="22" height="10" viewBox="0 0 22 10" fill="none" className="text-primary">
+        <path d="M0 5 H8 L11 1 L14 5 L17 9 L22 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div className="size-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.8)]" />
+    </div>
+  );
+}
+
 function MobileHeader({ isAdmin, isLogged, onSignOut }: { isAdmin: boolean; isLogged: boolean; onSignOut: () => void }) {
   const loc = useLocation();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => setOpen(false), [loc.pathname]);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
+      <div
+        className={cn(
+          "md:hidden relative z-30 transition-all duration-300 ease-out",
+          scrolled ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
+        )}
+      >
+        <div className="flex items-center justify-center gap-3 bg-background/95 backdrop-blur px-4 py-3">
+          <Ornament side="left" />
+          <Link to="/" className="shrink-0">
+            <Logo size={44} withText={false} />
+          </Link>
+          <Ornament side="right" />
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+      </div>
       <SheetTrigger asChild>
         <button
           aria-label="Abrir menu"
-          className="md:hidden fixed top-4 right-4 z-50 size-12 rounded-full bg-gradient-gold shadow-gold flex items-center justify-center text-primary-foreground active:scale-95 transition-transform ring-2 ring-primary/40"
+          className={cn(
+            "md:hidden fixed right-3 z-50 size-12 rounded-full bg-gradient-gold flex items-center justify-center text-primary-foreground active:scale-95 transition-all duration-300 ease-out ring-2 ring-primary/40",
+            "shadow-[0_4px_18px_-2px_hsl(var(--primary)/0.55)]",
+            scrolled ? "top-3" : "top-4",
+          )}
         >
           <Menu className="size-6" />
         </button>
