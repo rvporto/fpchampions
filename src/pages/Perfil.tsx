@@ -198,6 +198,20 @@ function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onO
             <div><Label>Nome completo</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={80} /></div>
           </div>
           <div><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+          <div>
+            <Label className="mb-2 block">Gênero</Label>
+            <RadioGroup value={gender} onValueChange={(v) => { if (v === "outro") { setGenderWarn(true); return; } setGender(v as any); }} className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="masculino" id="ge-m" /><Label htmlFor="ge-m" className="cursor-pointer">Masculino</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="feminino" id="ge-f" /><Label htmlFor="ge-f" className="cursor-pointer">Feminino</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="outro" id="ge-o" /><Label htmlFor="ge-o" className="cursor-pointer">Outro</Label>
+              </div>
+            </RadioGroup>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -206,6 +220,7 @@ function EditProfileDialog({ open, onOpenChange, onSaved }: { open: boolean; onO
           </Button>
         </DialogFooter>
       </DialogContent>
+      <InvalidGenderDialog open={genderWarn} onOpenChange={setGenderWarn} />
     </Dialog>
   );
 }
