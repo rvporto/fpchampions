@@ -109,32 +109,23 @@ export default function Ranking() {
                       place === 1
                         ? {
                             ring: "ring-warning",
-                            border: "border-warning",
-                            bg: "bg-[linear-gradient(180deg,hsl(var(--warning)/0.18)_0%,hsl(var(--warning)/0.04)_100%)]",
                             badgeBg: "bg-gradient-gold shadow-[0_4px_16px_-2px_hsl(var(--warning)/0.6)]",
                             iconColor: "text-primary-foreground",
-                            glow: "shadow-[0_0_24px_-4px_hsl(var(--warning)/0.55)]",
                             icon: Crown,
                             accent: "text-warning",
                           }
                         : place === 2
                         ? {
                             ring: "ring-muted-foreground",
-                            border: "border-border",
-                            bg: "bg-card",
                             badgeBg: "bg-secondary border border-border",
                             iconColor: "text-foreground/80",
-                            glow: "",
                             icon: Medal,
                             accent: "text-muted-foreground",
                           }
                         : {
                             ring: "ring-tournament",
-                            border: "border-tournament/60",
-                            bg: "bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)]",
                             badgeBg: "bg-tournament/20 border border-tournament/50",
                             iconColor: "text-tournament",
-                            glow: "",
                             icon: AwardIcon,
                             accent: "text-tournament",
                           };
