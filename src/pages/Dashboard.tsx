@@ -21,15 +21,38 @@ export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const today = new Date();
   const year = today.getFullYear();
-  const month = today.getMonth() + 1;
 
-  const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month });
   const { data: seasonRanking = [], isLoading: lr2 } = useRanking({ year });
   const { data: games = [] } = useGames();
   const { data: stats } = usePlayerStats(user?.id, year);
   const { data: lifetimeStats } = usePlayerStats(user?.id);
   const { data: champions = [] } = useSeasonChampions();
   const { data: monthly = [] } = useAllMonthlyRankings();
+
+  // Mês a exibir: o mês da última partida finalizada do ano corrente,
+  // ou — se não houver — o último mês encerrado.
+  const finishedGames = useMemo(
+    () => games.filter((g) => g.status === "finished" && g.season_year === year),
+    [games, year]
+  );
+  const lastGameMonth = useMemo(() => {
+    if (finishedGames.length === 0) return null;
+    return finishedGames.reduce((max, g) => Math.max(max, g.month), 0);
+  }, [finishedGames]);
+  const lastClosedMonth = useMemo(() => {
+    const ms = monthly.filter((m) => m.season_year === year).map((m) => m.month);
+    return ms.length ? Math.max(...ms) : null;
+  }, [monthly, year]);
+  const displayMonth = lastGameMonth ?? lastClosedMonth ?? today.getMonth() + 1;
+  const closedRecord = useMemo(
+    () => monthly.find((m) => m.season_year === year && m.month === displayMonth) ?? null,
+    [monthly, year, displayMonth]
+  );
+  // Considera "encerrado" somente se não houve nenhuma partida em mês posterior.
+  const isClosed = !!closedRecord && (lastGameMonth === null || lastGameMonth <= displayMonth);
+
+  const { data: monthlyRanking = [], isLoading: lr1 } = useRanking({ year, month: displayMonth });
+
   const computedXp = useMemo(() => {
     if (!user || !lifetimeStats) return profile?.xp ?? 0;
     const achievements = computeAchievements({
@@ -65,9 +88,12 @@ export default function Dashboard() {
         ranking={monthlyRanking}
         myIndex={myMonthIndex}
         year={year}
-        month={month}
+        month={displayMonth}
         loading={lr1}
         currentUserId={user?.id}
+        closed={isClosed}
+        closedRecord={closedRecord}
+        monthlyRankings={monthly}
       />
 
       <div className="grid lg:grid-cols-2 gap-6">
