@@ -125,6 +125,8 @@ export function useMergeTempIntoUser() {
         .update({ user_id: input.user_id, temp_player_id: null })
         .eq("temp_player_id", input.temp_player_id);
       if (e1) throw e1;
+      // herda títulos mensais ganhos como temp
+      await inheritMonthlyChampionships(input.temp_player_id, input.user_id);
       // marca quaisquer link_requests deste temp como aprovadas
       await supabase
         .from("link_requests")
@@ -142,4 +144,33 @@ export function useMergeTempIntoUser() {
       qc.invalidateQueries();
     },
   });
+}
+
+// Migra os campeonatos mensais que o jogador temporário ganhou para o usuário,
+// somando o valor dos prêmios em lifetime_winnings.
+async function inheritMonthlyChampionships(tempPlayerId: string, userId: string) {
+  const { data: rows } = await supabase
+    .from("monthly_rankings")
+    .select("id, prize_amount")
+    .eq("champion_temp_player_id", tempPlayerId);
+  const list = (rows ?? []) as { id: string; prize_amount: number }[];
+  if (list.length === 0) return;
+  const totalPrize = list.reduce((s, r) => s + Number(r.prize_amount || 0), 0);
+  const ids = list.map((r) => r.id);
+  await supabase
+    .from("monthly_rankings")
+    .update({ champion_user_id: userId, champion_temp_player_id: null })
+    .in("id", ids);
+  if (totalPrize > 0) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("lifetime_winnings")
+      .eq("id", userId)
+      .maybeSingle();
+    const cur = Number((prof as any)?.lifetime_winnings || 0);
+    await supabase
+      .from("profiles")
+      .update({ lifetime_winnings: cur + totalPrize })
+      .eq("id", userId);
+  }
 }
