@@ -25,8 +25,8 @@ export function CreateGameModal({ open, onOpenChange }: Props) {
   const [dateTime, setDateTime] = useState(defaultDateTime);
   const [seasonYear, setSeasonYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [buyIn, setBuyIn] = useState("50");
-  const [rebuy, setRebuy] = useState("30");
+  const [buyIn, setBuyIn] = useState("40");
+  const [rebuy, setRebuy] = useState("10");
   const [description, setDescription] = useState("");
   const [participants, setParticipants] = useState<SelectedParticipant[]>([]);
   const create = useCreateGame();
