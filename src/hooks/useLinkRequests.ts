@@ -78,6 +78,9 @@ export function useApproveLinkRequest() {
         .eq("temp_player_id", req.temp_player_id);
       if (e1) throw e1;
 
+      // 1.1) Herdar campeonatos mensais ganhos como temp
+      await inheritMonthlyChampionships(req.temp_player_id, req.user_id);
+
       // 2) Marcar request
       const { error: e2 } = await supabase
         .from("link_requests")
