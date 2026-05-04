@@ -52,12 +52,24 @@ export default function Estatisticas() {
     },
   });
 
+  const { data: monthlyRankings = [] } = useMonthlyRankings(year);
+
   const { data: meta } = useQuery({
-    queryKey: ["stats-meta", year, parts.length],
-    enabled: parts.length > 0,
+    queryKey: ["stats-meta", year, parts.length, monthlyRankings.length],
+    enabled: parts.length > 0 || monthlyRankings.length > 0,
     queryFn: async () => {
-      const userIds = [...new Set(parts.map((p) => p.user_id).filter(Boolean) as string[])];
-      const tempIds = [...new Set(parts.map((p) => p.temp_player_id).filter(Boolean) as string[])];
+      const userIds = [
+        ...new Set([
+          ...parts.map((p) => p.user_id).filter(Boolean) as string[],
+          ...monthlyRankings.map((m) => m.champion_user_id).filter(Boolean) as string[],
+        ]),
+      ];
+      const tempIds = [
+        ...new Set([
+          ...parts.map((p) => p.temp_player_id).filter(Boolean) as string[],
+          ...monthlyRankings.map((m) => m.champion_temp_player_id).filter(Boolean) as string[],
+        ]),
+      ];
       const [{ data: profs }, { data: temps }] = await Promise.all([
         userIds.length ? supabase.from("profiles").select("id, nickname, avatar_url").in("id", userIds) : Promise.resolve({ data: [] }),
         tempIds.length ? supabase.from("temporary_players").select("id, nickname, avatar_url").in("id", tempIds) : Promise.resolve({ data: [] }),
