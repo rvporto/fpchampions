@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, FileText, Crown, Medal, Loader2, RefreshCw } from "lucide-react";
+import { Trophy, FileText, Crown, Medal, Award as AwardIcon, Loader2, RefreshCw } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
@@ -92,26 +92,42 @@ export default function Ranking() {
       ) : (
         <>
           {podium.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              {[1, 0, 2].map((order) => {
-                const row = podium[order];
-                if (!row) return <div key={order} />;
-                const place = order + 1;
-                const styles = place === 1 ? "scale-105 border-primary/60" : "";
-                const icon = place === 1 ? <Crown className="size-6 text-warning" /> : place === 2 ? <Medal className="size-6 text-muted-foreground" /> : <Medal className="size-6 text-tournament" />;
-                return (
-                  <Card key={row.id} className={`fpc-card ${styles}`}>
-                    <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-2">
-                      {icon}
-                      <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={place === 1 ? 64 : 52} />
-                      <p className="font-medium text-sm break-words line-clamp-2">{row.nickname}</p>
-                      <p className="font-display text-xl text-primary">{formatPoints(row.points)}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{ordinal(place)} lugar</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            <Card className="fpc-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="font-display fpc-text-gold flex items-center justify-center gap-2 text-xl">
+                  <Crown className="size-5 text-warning" /> Pódio dos Campeões
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-6">
+                  {[1, 0, 2].map((order) => {
+                    const row = podium[order];
+                    if (!row) return <div key={order} />;
+                    const place = order + 1;
+                    const cfg =
+                      place === 1
+                        ? { ring: "ring-warning", border: "border-warning/60 shadow-[0_0_40px_-8px_hsl(var(--warning)/0.55)]", bg: "bg-warning/15", icon: <Crown className="size-5 text-warning" />, accent: "text-warning" }
+                        : place === 2
+                        ? { ring: "ring-muted-foreground", border: "border-muted-foreground/40", bg: "bg-muted/40", icon: <Medal className="size-5 text-muted-foreground" />, accent: "text-muted-foreground" }
+                        : { ring: "ring-tournament", border: "border-tournament/50", bg: "bg-tournament/15", icon: <AwardIcon className="size-5 text-tournament" />, accent: "text-tournament" };
+                    const avatarSize = place === 1 ? 88 : 72;
+                    return (
+                      <div key={row.id} className={`relative rounded-2xl border ${cfg.border} bg-card/60 px-2 sm:px-4 pt-10 pb-4 flex flex-col items-center text-center`}>
+                        <div className={`absolute -top-6 left-1/2 -translate-x-1/2 size-12 rounded-full ${cfg.bg} border border-border flex items-center justify-center`}>
+                          {cfg.icon}
+                        </div>
+                        <div className={`rounded-full ring-2 ${cfg.ring} ring-offset-2 ring-offset-card`}>
+                          <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={avatarSize} />
+                        </div>
+                        <p className="font-medium text-sm sm:text-base mt-3 break-words line-clamp-2">{row.nickname}</p>
+                        {!row.isTemp && <LevelBadge level={row.level} className="mt-1" />}
+                        <p className={`font-display text-xl sm:text-2xl mt-2 ${cfg.accent}`}>{formatPoints(row.points)} <span className="text-xs sm:text-sm opacity-80">pts</span></p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           <Card className="fpc-card">
