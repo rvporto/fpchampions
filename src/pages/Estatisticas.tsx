@@ -4,10 +4,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { formatPoints, formatBRL } from "@/lib/format";
 import { useGames } from "@/hooks/useGames";
+import { useMonthlyRankings } from "@/hooks/useFinance";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
-import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown, Trophy } from "lucide-react";
+
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 type SortKey = "nickname" | "games" | "wins" | "kos" | "entriesTotal" | "points" | "avg" | "prize" | "invested" | "profit";
 
