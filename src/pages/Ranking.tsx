@@ -99,29 +99,86 @@ export default function Ranking() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-5 items-end">
                   {[1, 0, 2].map((order) => {
                     const row = podium[order];
                     if (!row) return <div key={order} />;
-                    const place = order + 1;
+                    const place = (order + 1) as 1 | 2 | 3;
+                    const me = !row.isTemp && user?.id === row.id;
                     const cfg =
                       place === 1
-                        ? { ring: "ring-warning", border: "border-warning/60 shadow-[0_0_40px_-8px_hsl(var(--warning)/0.55)]", bg: "bg-warning/15", icon: <Crown className="size-5 text-warning" />, accent: "text-warning" }
+                        ? {
+                            ring: "ring-warning",
+                            border: "border-warning",
+                            bg: "bg-[linear-gradient(180deg,hsl(var(--warning)/0.18)_0%,hsl(var(--warning)/0.04)_100%)]",
+                            badgeBg: "bg-gradient-gold shadow-[0_4px_16px_-2px_hsl(var(--warning)/0.6)]",
+                            iconColor: "text-primary-foreground",
+                            glow: "shadow-[0_0_24px_-4px_hsl(var(--warning)/0.55)]",
+                            icon: Crown,
+                            accent: "text-warning",
+                          }
                         : place === 2
-                        ? { ring: "ring-muted-foreground", border: "border-muted-foreground/40", bg: "bg-muted/40", icon: <Medal className="size-5 text-muted-foreground" />, accent: "text-muted-foreground" }
-                        : { ring: "ring-tournament", border: "border-tournament/50", bg: "bg-tournament/15", icon: <AwardIcon className="size-5 text-tournament" />, accent: "text-tournament" };
-                    const avatarSize = place === 1 ? 88 : 72;
+                        ? {
+                            ring: "ring-muted-foreground",
+                            border: "border-border",
+                            bg: "bg-card",
+                            badgeBg: "bg-secondary border border-border",
+                            iconColor: "text-foreground/80",
+                            glow: "",
+                            icon: Medal,
+                            accent: "text-muted-foreground",
+                          }
+                        : {
+                            ring: "ring-tournament",
+                            border: "border-tournament/60",
+                            bg: "bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)]",
+                            badgeBg: "bg-tournament/20 border border-tournament/50",
+                            iconColor: "text-tournament",
+                            glow: "",
+                            icon: AwardIcon,
+                            accent: "text-tournament",
+                          };
+                    const Icon = cfg.icon;
+                    const avatarSize = place === 1 ? 96 : 80;
+                    const avatarSizeMobile = place === 1 ? 48 : 44;
                     return (
-                      <div key={row.id} className={`relative rounded-2xl border ${cfg.border} bg-card/60 px-2 sm:px-4 pt-10 pb-4 flex flex-col items-center text-center`}>
-                        <div className={`absolute -top-6 left-1/2 -translate-x-1/2 size-12 rounded-full ${cfg.bg} border border-border flex items-center justify-center`}>
-                          {cfg.icon}
+                      <div key={row.id} className="relative flex flex-col items-center pt-5 sm:pt-7">
+                        <div className={`absolute top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full sm:h-12 sm:w-12 ${cfg.badgeBg}`}>
+                          <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${cfg.iconColor}`} />
                         </div>
-                        <div className={`rounded-full ring-2 ${cfg.ring} ring-offset-2 ring-offset-card`}>
-                          <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={avatarSize} />
+                        <div className={`w-full rounded-2xl border-2 p-2.5 pt-6 sm:p-4 sm:pt-8 transition-all ${cfg.border} ${cfg.bg} ${cfg.glow}`}>
+                          <div className="flex justify-center">
+                            <div className={`rounded-full ring-2 ring-offset-2 ring-offset-background ${cfg.ring}`}>
+                              <span className="hidden sm:block">
+                                <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={avatarSize} />
+                              </span>
+                              <span className="sm:hidden block">
+                                <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={avatarSizeMobile} />
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-center sm:mt-3">
+                            <div className="flex flex-col items-center gap-1 sm:flex-row sm:flex-wrap sm:justify-center">
+                              <span
+                                className="line-clamp-2 break-words text-[10px] font-bold leading-tight sm:line-clamp-1 sm:truncate sm:text-base"
+                                title={row.nickname}
+                              >
+                                {row.nickname}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {!row.isTemp && <LevelBadge level={row.level} />}
+                                {me && (
+                                  <span className="rounded-full bg-primary/20 px-1 py-0.5 text-[8px] font-bold uppercase text-primary sm:px-1.5 sm:text-[9px]">
+                                    Você
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className={`mt-0.5 text-sm font-extrabold sm:text-xl ${cfg.accent}`}>
+                              {formatPoints(row.points)} <span className="text-[10px] sm:text-xs opacity-80">pts</span>
+                            </div>
+                          </div>
                         </div>
-                        <p className="font-medium text-sm sm:text-base mt-3 break-words line-clamp-2">{row.nickname}</p>
-                        {!row.isTemp && <LevelBadge level={row.level} className="mt-1" />}
-                        <p className={`font-display text-xl sm:text-2xl mt-2 ${cfg.accent}`}>{formatPoints(row.points)} <span className="text-xs sm:text-sm opacity-80">pts</span></p>
                       </div>
                     );
                   })}
@@ -135,25 +192,43 @@ export default function Ranking() {
             <CardContent className="space-y-2">
               {list.map((row, i) => {
                 const me = !row.isTemp && user?.id === row.id;
+                const isTop3 = i < 3;
                 const delta = tab === "season" ? deltaMap?.get(rowKey(row)) : undefined;
                 return (
-                  <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/40"}`}>
-                    <span className="font-display text-lg w-8 text-center text-primary">{i + 1}º</span>
-                    {tab === "season" && (
-                      <span className="w-8 flex justify-center"><PositionDelta delta={delta} /></span>
-                    )}
-                    <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={36} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm break-words line-clamp-2 flex items-center gap-2 flex-wrap">
-                        <span>{row.nickname}</span>
-                        {!row.isTemp && <LevelBadge level={row.level} />}
-                        {row.isTemp && <span className="text-[10px] uppercase text-muted-foreground">temp</span>}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{row.games} partidas · {row.wins} vitórias</p>
+                  <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : isTop3 ? "bg-primary/5" : "hover:bg-secondary/40"}`}>
+                    {/* LINHA 1 */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex w-12 items-center gap-1.5 sm:w-14 sm:gap-2 shrink-0">
+                        <span className={`font-display text-base sm:text-lg ${isTop3 ? "text-primary" : "text-muted-foreground"}`}>{i + 1}º</span>
+                        {tab === "season" && <PositionDelta delta={delta} />}
+                      </div>
+                      <PlayerAvatar avatarId={row.avatarId} name={row.nickname} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="break-words font-semibold text-sm leading-tight">{row.nickname}</span>
+                          {!row.isTemp && <LevelBadge level={row.level} />}
+                          {me && <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">Você</span>}
+                          {row.isTemp && <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">Temp</span>}
+                        </div>
+                        <div className="hidden text-xs text-muted-foreground sm:block">
+                          {row.games} {row.games === 1 ? "partida" : "partidas"} · {row.wins} vitórias
+                        </div>
+                      </div>
+                      {/* Direita: desktop */}
+                      <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+                        <p className="font-display text-base text-primary">{formatPoints(row.points)} <span className="text-xs opacity-80">pts</span></p>
+                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
-                      <p className="font-display text-base text-primary">{formatPoints(row.points)}</p>
+                    {/* LINHA 2 — mobile */}
+                    <div className="mt-2 flex items-center justify-between gap-2 pl-12 sm:hidden">
+                      <div className="text-xs text-muted-foreground">
+                        {row.games} {row.games === 1 ? "partida" : "partidas"}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                        <p className="font-display text-sm text-primary">{formatPoints(row.points)} <span className="text-[10px] opacity-80">pts</span></p>
+                      </div>
                     </div>
                   </div>
                 );
