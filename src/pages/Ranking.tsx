@@ -146,7 +146,7 @@ export default function Ranking() {
                         <div className={`absolute top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full sm:h-12 sm:w-12 ${cfg.badgeBg}`}>
                           <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${cfg.iconColor}`} />
                         </div>
-                        <div className={`w-full rounded-2xl border-2 p-2.5 pt-6 sm:p-4 sm:pt-8 transition-all ${cfg.border} ${cfg.bg} ${cfg.glow}`}>
+                        <div className="w-full rounded-2xl border-2 p-2.5 sm:p-4 sm:pt-8 transition-all border-tournament/60 bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)] px-0 py-0 pb-0 pt-[20px]">
                           <div className="flex justify-center">
                             <div className={`rounded-full ring-2 ring-offset-2 ring-offset-background ${cfg.ring}`}>
                               <span className="hidden sm:block">
