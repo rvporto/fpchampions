@@ -24,6 +24,7 @@ export interface DbMonthlyRanking {
   season_year: number;
   month: number;
   champion_user_id: string | null;
+  champion_temp_player_id: string | null;
   prize_amount: number;
   closed_at: string;
 }
