@@ -109,32 +109,23 @@ export default function Ranking() {
                       place === 1
                         ? {
                             ring: "ring-warning",
-                            border: "border-warning",
-                            bg: "bg-[linear-gradient(180deg,hsl(var(--warning)/0.18)_0%,hsl(var(--warning)/0.04)_100%)]",
                             badgeBg: "bg-gradient-gold shadow-[0_4px_16px_-2px_hsl(var(--warning)/0.6)]",
                             iconColor: "text-primary-foreground",
-                            glow: "shadow-[0_0_24px_-4px_hsl(var(--warning)/0.55)]",
                             icon: Crown,
                             accent: "text-warning",
                           }
                         : place === 2
                         ? {
                             ring: "ring-muted-foreground",
-                            border: "border-border",
-                            bg: "bg-card",
                             badgeBg: "bg-secondary border border-border",
                             iconColor: "text-foreground/80",
-                            glow: "",
                             icon: Medal,
                             accent: "text-muted-foreground",
                           }
                         : {
                             ring: "ring-tournament",
-                            border: "border-tournament/60",
-                            bg: "bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)]",
                             badgeBg: "bg-tournament/20 border border-tournament/50",
                             iconColor: "text-tournament",
-                            glow: "",
                             icon: AwardIcon,
                             accent: "text-tournament",
                           };
@@ -146,7 +137,7 @@ export default function Ranking() {
                         <div className={`absolute top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full sm:h-12 sm:w-12 ${cfg.badgeBg}`}>
                           <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${cfg.iconColor}`} />
                         </div>
-                        <div className={`w-full rounded-2xl border-2 p-2.5 pt-6 sm:p-4 sm:pt-8 transition-all ${cfg.border} ${cfg.bg} ${cfg.glow}`}>
+                        <div className="w-full rounded-2xl border-2 p-2.5 sm:p-4 sm:pt-8 transition-all border-tournament/60 bg-[linear-gradient(180deg,hsl(var(--tournament)/0.22)_0%,hsl(var(--tournament)/0.05)_100%)] px-0 py-0 pb-0 pt-[20px]">
                           <div className="flex justify-center">
                             <div className={`rounded-full ring-2 ring-offset-2 ring-offset-background ${cfg.ring}`}>
                               <span className="hidden sm:block">
