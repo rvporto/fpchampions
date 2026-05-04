@@ -131,7 +131,13 @@ export function useCreateExpense() {
 export function useCloseMonth() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { year: number; month: number; champion_user_id: string | null; prize_amount: number }) => {
+    mutationFn: async (input: {
+      year: number;
+      month: number;
+      champion_user_id: string | null;
+      champion_temp_player_id?: string | null;
+      prize_amount: number;
+    }) => {
       const { error } = await supabase
         .from("monthly_rankings")
         .upsert(
@@ -139,13 +145,14 @@ export function useCloseMonth() {
             season_year: input.year,
             month: input.month,
             champion_user_id: input.champion_user_id,
+            champion_temp_player_id: input.champion_temp_player_id ?? null,
             prize_amount: input.prize_amount,
             closed_at: new Date().toISOString(),
           },
           { onConflict: "season_year,month" }
         );
       if (error) throw error;
-      // adiciona ao lifetime_winnings
+      // adiciona ao lifetime_winnings apenas se já houver usuário cadastrado
       if (input.champion_user_id && input.prize_amount > 0) {
         const { data: prof } = await supabase
           .from("profiles")
