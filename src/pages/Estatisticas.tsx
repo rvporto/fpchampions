@@ -105,8 +105,24 @@ export default function Estatisticas() {
       cur.invested += Number(p.total_invested || 0);
       map.set(key, cur);
     }
+    // soma prêmios de meses vencidos ao prize (e portanto ao lucro)
+    for (const mr of monthlyRankings) {
+      const isTemp = !!mr.champion_temp_player_id;
+      const id = mr.champion_user_id ?? mr.champion_temp_player_id;
+      if (!id) continue;
+      const key = isTemp ? `t:${mr.champion_temp_player_id}` : `u:${mr.champion_user_id}`;
+      const m: any = isTemp ? meta.temp.get(mr.champion_temp_player_id!) : meta.prof.get(mr.champion_user_id!);
+      const cur: Stat = map.get(key) ?? {
+        key, id: id as string, isTemp,
+        nickname: m?.nickname ?? "Jogador",
+        avatarId: m?.avatar_url ?? "a1",
+        games: 0, wins: 0, points: 0, kos: 0, entries: 0, rebuys: 0, prize: 0, invested: 0,
+      };
+      cur.prize += Number(mr.prize_amount || 0);
+      map.set(key, cur);
+    }
     return [...map.values()];
-  }, [parts, meta]);
+  }, [parts, meta, monthlyRankings]);
 
   const [sortKey, setSortKey] = useState<SortKey>("points");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
