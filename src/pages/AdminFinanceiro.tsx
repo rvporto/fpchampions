@@ -12,7 +12,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useGames } from "@/hooks/useGames";
 import { useExpenses, useCreateExpense, useMonthlyRankings, useSeasonChampions, useCloseMonth, useCloseSeason, useIndicateAs } from "@/hooks/useFinance";
 import { useRanking } from "@/hooks/useRanking";
-import { useProfiles } from "@/hooks/useGames";
+import { useProfiles, useTempPlayers } from "@/hooks/useGames";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminFinanceiro() {
