@@ -82,6 +82,11 @@ export default function AdminFinanceiro() {
               {byMonth.map((m) => {
                 const empty = m.rakeAs + m.rakeMonth + m.prize === 0;
                 const champ = m.closed ? profiles.find((p) => p.id === m.closed?.champion_user_id) : null;
+                const champTemp = m.closed && (m.closed as any).champion_temp_player_id
+                  ? tempPlayers.find((t) => t.id === (m.closed as any).champion_temp_player_id)
+                  : null;
+                const champName = champ?.nickname ?? champTemp?.nickname ?? "—";
+                const champAvatar = champ?.avatar_url ?? champTemp?.avatar_url ?? "a1";
                 return (
                   <tr key={m.month} className={`border-b border-border/40 ${empty && !m.closed ? "opacity-40" : ""}`}>
                     <td className="py-2 px-2 font-medium">{MONTHS_PT[m.month - 1]}</td>
@@ -91,8 +96,8 @@ export default function AdminFinanceiro() {
                     <td className="text-right px-2">
                       {m.closed ? (
                         <div className="flex items-center justify-end gap-2">
-                          {champ && <PlayerAvatar avatarId={champ.avatar_url ?? "a1"} name={champ.nickname ?? ""} size={20} />}
-                          <span className="text-xs">{champ?.nickname ?? "—"} · {formatBRL(Number(m.closed.prize_amount))}</span>
+                          {(champ || champTemp) && <PlayerAvatar avatarId={champAvatar} name={champName} size={20} />}
+                          <span className="text-xs">{champName}{champTemp && !champ ? " (temp)" : ""} · {formatBRL(Number(m.closed.prize_amount))}</span>
                         </div>
                       ) : empty ? "—" : <span className="text-xs text-muted-foreground">Aberto</span>}
                     </td>
