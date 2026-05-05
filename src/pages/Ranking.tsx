@@ -13,6 +13,7 @@ import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
 import { LinkTempPlayerDialog } from "@/components/LinkTempPlayerDialog";
 import { LevelBadge, PositionDelta } from "@/components/RankIndicators";
+import { PlayerProfileDialog } from "@/components/PlayerProfileDialog";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
