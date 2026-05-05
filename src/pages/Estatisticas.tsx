@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
 import { Loader2, ArrowUp, ArrowDown, Trophy } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -35,15 +36,18 @@ export default function Estatisticas() {
   const seasons = [...new Set(games.map((g) => g.season_year))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const [monthFilter, setMonthFilter] = useState<number | "all">("all");
   const list = seasons.length ? seasons : [currentYear];
 
   const finishedIds = useMemo(
-    () => games.filter((g) => g.status === "finished" && g.season_year === year).map((g) => g.id),
-    [games, year]
+    () => games
+      .filter((g) => g.status === "finished" && g.season_year === year && (monthFilter === "all" || g.month === monthFilter))
+      .map((g) => g.id),
+    [games, year, monthFilter]
   );
 
   const { data: parts = [], isLoading: pLoading } = useQuery({
-    queryKey: ["stats-parts", year, finishedIds.length],
+    queryKey: ["stats-parts", year, monthFilter, finishedIds.length],
     enabled: finishedIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase.from("game_participations").select("*").in("game_id", finishedIds);
@@ -106,7 +110,7 @@ export default function Estatisticas() {
       map.set(key, cur);
     }
     // soma prêmios de meses vencidos ao prize (e portanto ao lucro)
-    for (const mr of monthlyRankings) {
+    for (const mr of monthlyRankings.filter((m) => monthFilter === "all" || m.month === monthFilter)) {
       const isTemp = !!mr.champion_temp_player_id;
       const id = mr.champion_user_id ?? mr.champion_temp_player_id;
       if (!id) continue;
@@ -174,9 +178,18 @@ export default function Estatisticas() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="font-display text-3xl fpc-text-gold">Estatísticas</h1>
-        <Tabs value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
-          <TabsList>{list.map((y) => <TabsTrigger key={y} value={String(y)}>{y}</TabsTrigger>)}</TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={String(monthFilter)} onValueChange={(v) => setMonthFilter(v === "all" ? "all" : parseInt(v))}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Ano todo</SelectItem>
+              {MONTH_NAMES.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Tabs value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
+            <TabsList>{list.map((y) => <TabsTrigger key={y} value={String(y)}>{y}</TabsTrigger>)}</TabsList>
+          </Tabs>
+        </div>
       </div>
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>

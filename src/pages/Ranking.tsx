@@ -13,6 +13,7 @@ import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
 import { LinkTempPlayerDialog } from "@/components/LinkTempPlayerDialog";
 import { LevelBadge, PositionDelta } from "@/components/RankIndicators";
+import { PlayerProfileDialog } from "@/components/PlayerProfileDialog";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Ranking() {
@@ -24,6 +25,7 @@ export default function Ranking() {
   const { data: deltaMap } = useSeasonRankingDelta(year);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [profilePlayer, setProfilePlayer] = useState<{ id: string; isTemp: boolean } | null>(null);
 
   const list = ranking ?? [];
   const podium = list.slice(0, 3);
@@ -195,7 +197,14 @@ export default function Ranking() {
                 const isTop3 = i < 3;
                 const delta = tab === "season" ? deltaMap?.get(rowKey(row)) : undefined;
                 return (
-                  <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : isTop3 ? "bg-primary/5" : "hover:bg-secondary/40"}`}>
+                  <div
+                    key={`${row.isTemp ? "t" : "u"}-${row.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setProfilePlayer({ id: row.id, isTemp: row.isTemp })}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setProfilePlayer({ id: row.id, isTemp: row.isTemp }); } }}
+                    className={`cursor-pointer rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : isTop3 ? "bg-primary/5" : "hover:bg-secondary/40"}`}
+                  >
                     {/* LINHA 1 */}
                     <div className="flex items-center gap-3">
                       <div className="flex w-12 items-center gap-1.5 sm:w-14 sm:gap-2 shrink-0">
@@ -217,7 +226,7 @@ export default function Ranking() {
                       {/* Direita: desktop */}
                       <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
                         <p className="font-display text-base text-primary">{formatPoints(row.points)} <span className="text-xs opacity-80">pts</span></p>
-                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                        {row.isTemp && <span onClick={(e) => e.stopPropagation()}><LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} /></span>}
                       </div>
                     </div>
                     {/* LINHA 2 — mobile */}
@@ -226,7 +235,7 @@ export default function Ranking() {
                         {row.games} {row.games === 1 ? "partida" : "partidas"}
                       </div>
                       <div className="flex items-center gap-2">
-                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                        {row.isTemp && <span onClick={(e) => e.stopPropagation()}><LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} /></span>}
                         <p className="font-display text-sm text-primary">{formatPoints(row.points)} <span className="text-[10px] opacity-80">pts</span></p>
                       </div>
                     </div>
@@ -237,6 +246,12 @@ export default function Ranking() {
           </Card>
         </>
       )}
+      <PlayerProfileDialog
+        open={!!profilePlayer}
+        onOpenChange={(v) => !v && setProfilePlayer(null)}
+        playerId={profilePlayer?.id ?? null}
+        isTemp={profilePlayer?.isTemp ?? false}
+      />
     </div>
   );
 }

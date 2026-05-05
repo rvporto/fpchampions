@@ -20,11 +20,13 @@ import { participantDisplay, gameTotals } from "@/lib/db-types";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText } from "lucide-react";
+import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText, Spade } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { renderAndCapture } from "@/lib/reports";
 import { GameReport } from "@/components/Reports";
 import { recalcRankingAndXp } from "@/lib/recalc";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   gameId: string | null;
@@ -48,8 +50,24 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   const [rakeAs, setRakeAs] = useState(0);
   const [rakeMonth, setRakeMonth] = useState(0);
   const [croupier, setCroupier] = useState(0);
+  const [isAsGame, setIsAsGame] = useState(false);
+  const [asPrizeAmount, setAsPrizeAmount] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [toAdd, setToAdd] = useState<SelectedParticipant[]>([]);
+
+  // saldo atual do Ás (rakeAs total - despesas)
+  const { data: asBalance = 0 } = useQuery({
+    queryKey: ["as_balance_current"],
+    queryFn: async () => {
+      const [{ data: gms }, { data: exps }] = await Promise.all([
+        supabase.from("games").select("rake_as").eq("status", "finished"),
+        supabase.from("expenses").select("amount"),
+      ]);
+      const totalAs = (gms ?? []).reduce((s: number, g: any) => s + Number(g.rake_as || 0), 0);
+      const totalExp = (exps ?? []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      return Math.max(0, totalAs - totalExp);
+    },
+  });
 
   useEffect(() => {
     if (game) {
@@ -68,6 +86,8 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       setRakeAs(Number(game.rake_as) || 0);
       setRakeMonth(Number(game.rake_month) || 0);
       setCroupier(Number(game.croupier_fee) || 0);
+      setIsAsGame(Boolean((game as any).is_as_game));
+      setAsPrizeAmount(Number((game as any).as_prize_amount) || 0);
     }
   }, [game?.id]);
 
@@ -79,9 +99,10 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       // pot = entries*buy_in + rebuys*rebuy_value
       return s + (r.entries * (Number(game?.buy_in) || 0)) + (r.rebuys * (Number(game?.rebuy_value) || 0));
     }, 0);
-    const prizePool = Math.max(0, totalPot - rakeAs - rakeMonth - croupier);
-    return { totalPlayers, totalActions, fm, totalPot, prizePool };
-  }, [rows, rakeAs, rakeMonth, croupier, game?.buy_in, game?.rebuy_value]);
+    const asExtra = isAsGame ? Number(asPrizeAmount || 0) : 0;
+    const prizePool = Math.max(0, totalPot - rakeAs - rakeMonth - croupier) + asExtra;
+    return { totalPlayers, totalActions, fm, totalPot, prizePool, asExtra };
+  }, [rows, rakeAs, rakeMonth, croupier, isAsGame, asPrizeAmount, game?.buy_in, game?.rebuy_value]);
 
   const setRow = (id: string, patch: Partial<Row>) => setRows((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
 
@@ -93,9 +114,23 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       koPoints: r.ko_points,
     });
 
+  const sortedParticipations = useMemo(() => {
+    if (!game) return [];
+    const list = [...game.participations];
+    if (game.status === "finished") {
+      list.sort((a, b) => {
+        const pa = rows[a.id]?.position ?? a.position ?? 999;
+        const pb = rows[b.id]?.position ?? b.position ?? 999;
+        return pa - pb;
+      });
+    }
+    return list;
+  }, [game, rows]);
+
   const saveAll = async (finalize: boolean) => {
     if (!game) return;
     try {
+      const asAmountToCharge = isAsGame ? Number(asPrizeAmount || 0) : 0;
       // 1. update game (rakes, totals, status)
       await updateGame.mutateAsync({
         id: game.id,
@@ -105,6 +140,8 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
           croupier_fee: croupier,
           total_pot: totals.totalPot,
           prize_pool: totals.prizePool,
+          is_as_game: isAsGame,
+          as_prize_amount: asAmountToCharge,
           status: finalize ? "finished" : game.status === "scheduled" ? "in_progress" : game.status,
         } as any,
       });
@@ -129,6 +166,14 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
         });
       }
       if (finalize) {
+        // débita o valor do Ás se for partida do Ás (apenas no momento de finalizar e somente uma vez)
+        if (isAsGame && asAmountToCharge > 0 && !((game as any).is_as_game && Number((game as any).as_prize_amount || 0) > 0)) {
+          await supabase.from("as_pool").insert({
+            game_id: game.id,
+            description: `Premiação Ás do Poker — ${game.name}`,
+            amount: -Math.abs(asAmountToCharge),
+          });
+        }
         try {
           await recalcRankingAndXp();
           await qc.invalidateQueries();
@@ -172,14 +217,46 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display fpc-text-gold flex items-center gap-2 break-words">
+          <DialogTitle className="font-display fpc-text-gold flex items-center gap-2 break-words flex-wrap">
             {game?.name ?? "Carregando..."}
             {game && (
-              <Badge variant={game.status === "finished" ? "default" : game.status === "in_progress" ? "secondary" : "outline"}>
-                {game.status === "finished" ? "Finalizada" : game.status === "in_progress" ? "Em andamento" : "Agendada"}
-              </Badge>
+              <>
+                <Badge variant={game.status === "finished" ? "default" : game.status === "in_progress" ? "secondary" : "outline"}>
+                  {game.status === "finished" ? "Finalizada" : game.status === "in_progress" ? "Em andamento" : "Agendada"}
+                </Badge>
+                {game.status !== "finished" && isAdmin && (
+                  <label className="flex items-center gap-1.5 text-xs font-normal cursor-pointer rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-primary">
+                    <Checkbox checked={isAsGame} onCheckedChange={(v) => setIsAsGame(Boolean(v))} />
+                    <Spade className="size-3.5" />
+                    <span>Ás do Poker</span>
+                  </label>
+                )}
+                {game.status === "finished" && (game as any).is_as_game && (
+                  <Badge className="bg-primary/20 text-primary border border-primary/40 flex items-center gap-1">
+                    <Spade className="size-3" /> Ás do Poker
+                  </Badge>
+                )}
+              </>
             )}
           </DialogTitle>
+          {game && game.status !== "finished" && isAdmin && isAsGame && (
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <Label className="text-xs">Saldo atual do Ás</Label>
+                <div className="h-10 px-3 flex items-center text-sm border border-border rounded-md bg-secondary/40">{formatBRL(asBalance)}</div>
+              </div>
+              <div>
+                <Label className="text-xs">Valor do Ás a acrescer (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={asPrizeAmount}
+                  onChange={(e) => setAsPrizeAmount(parseFloat(e.target.value || "0"))}
+                  placeholder={String(asBalance)}
+                />
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         {isLoading || !game ? (
@@ -203,7 +280,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
               <TabsContent value="resultados" className="space-y-4">
                 {/* Mobile: per-player cards */}
                 <div className="sm:hidden space-y-3">
-                  {game.participations.map((p) => {
+                  {sortedParticipations.map((p) => {
                     const display = participantDisplay(p);
                     const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
                     const bd = calcPoints(r);
@@ -262,7 +339,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {game.participations.map((p) => {
+                      {sortedParticipations.map((p) => {
                         const display = participantDisplay(p);
                         const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
                         const bd = calcPoints(r);
