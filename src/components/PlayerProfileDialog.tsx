@@ -46,13 +46,13 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
       const { data: parts } = await supabase.from("game_participations").select("*").eq(col, playerId);
       const list = ((parts ?? []) as DbParticipation[]);
       const ids = [...new Set(list.map((p) => p.game_id))];
-      const { data: games } = ids.length
+      const gamesRes = ids.length
         ? await supabase.from("games").select("*").in("id", ids)
-        : { data: [] as DbGame[] } as any;
-      const gMap = new Map((games ?? []).map((g: any) => [g.id, g as DbGame]));
+        : { data: [] as DbGame[] };
+      const gMap = new Map(((gamesRes.data ?? []) as DbGame[]).map((g) => [g.id, g]));
       const finished = list
         .map((p) => ({ p, g: gMap.get(p.game_id) }))
-        .filter((x) => x.g && x.g.status === "finished") as { p: DbParticipation; g: DbGame }[];
+        .filter((x): x is { p: DbParticipation; g: DbGame } => !!x.g && x.g.status === "finished");
 
       // monthly + season
       const [{ data: monthly }, { data: champs }] = await Promise.all([
