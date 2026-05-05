@@ -107,6 +107,21 @@ export default function Dashboard() {
   );
 }
 
+function GuestHero() {
+  return (
+    <Card className="fpc-card relative overflow-hidden">
+      <CardContent className="p-6 flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Bem-vindo</p>
+          <h1 className="font-display text-2xl sm:text-3xl fpc-text-gold">Família Poker Champions</h1>
+          <p className="text-sm text-muted-foreground mt-1">Entre ou cadastre-se para acessar seu perfil, conquistas e estatísticas.</p>
+        </div>
+        <Link to="/auth"><Button className="bg-gradient-gold text-primary-foreground">Entrar / Cadastrar</Button></Link>
+      </CardContent>
+    </Card>
+  );
+}
+
 function WelcomeCard({ profile, levelData, mySeasonIndex }: any) {
   return (
     <Card className="fpc-card relative overflow-hidden">
