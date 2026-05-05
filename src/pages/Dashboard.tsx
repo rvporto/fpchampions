@@ -66,24 +66,27 @@ export default function Dashboard() {
   }, [user, profile?.xp, lifetimeStats, champions, monthly]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
-  if (!profile) return <Navigate to="/complete-profile" replace />;
+  if (user && !profile) return <Navigate to="/complete-profile" replace />;
 
-  const myMonthIndex = monthlyRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
-  const mySeasonIndex = seasonRanking.findIndex((r) => !r.isTemp && r.id === user?.id);
+  const myMonthIndex = user ? monthlyRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
+  const mySeasonIndex = user ? seasonRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
   const lvl = levelFromXp(computedXp);
   const recentGames = games.filter((g) => g.status === "finished").slice(0, 3);
 
   return (
     <div className="space-y-6">
-      <WelcomeCard profile={profile} levelData={lvl} mySeasonIndex={mySeasonIndex} />
-      <StatsGrid
-        games={stats?.games ?? 0}
-        wins={stats?.wins ?? 0}
-        podiums={stats?.podiums ?? 0}
-        ko={stats?.ko ?? 0}
-        points={stats?.points ?? 0}
-        position={mySeasonIndex >= 0 ? mySeasonIndex + 1 : null}
-      />
+      {profile && <WelcomeCard profile={profile} levelData={lvl} mySeasonIndex={mySeasonIndex} />}
+      {profile && (
+        <StatsGrid
+          games={stats?.games ?? 0}
+          wins={stats?.wins ?? 0}
+          podiums={stats?.podiums ?? 0}
+          ko={stats?.ko ?? 0}
+          points={stats?.points ?? 0}
+          position={mySeasonIndex >= 0 ? mySeasonIndex + 1 : null}
+        />
+      )}
+      {!user && <GuestHero />}
       <MonthlyRankingCard
         ranking={monthlyRanking}
         myIndex={myMonthIndex}
@@ -101,6 +104,21 @@ export default function Dashboard() {
         <RecentGamesCard games={recentGames} />
       </div>
     </div>
+  );
+}
+
+function GuestHero() {
+  return (
+    <Card className="fpc-card relative overflow-hidden">
+      <CardContent className="p-6 flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Bem-vindo</p>
+          <h1 className="font-display text-2xl sm:text-3xl fpc-text-gold">Família Poker Champions</h1>
+          <p className="text-sm text-muted-foreground mt-1">Entre ou cadastre-se para acessar seu perfil, conquistas e estatísticas.</p>
+        </div>
+        <Link to="/auth"><Button className="bg-gradient-gold text-primary-foreground">Entrar / Cadastrar</Button></Link>
+      </CardContent>
+    </Card>
   );
 }
 
