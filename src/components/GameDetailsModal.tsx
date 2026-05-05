@@ -280,7 +280,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
               <TabsContent value="resultados" className="space-y-4">
                 {/* Mobile: per-player cards */}
                 <div className="sm:hidden space-y-3">
-                  {game.participations.map((p) => {
+                  {sortedParticipations.map((p) => {
                     const display = participantDisplay(p);
                     const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
                     const bd = calcPoints(r);
@@ -339,7 +339,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {game.participations.map((p) => {
+                      {sortedParticipations.map((p) => {
                         const display = participantDisplay(p);
                         const r = rows[p.id] ?? { id: p.id, entries: 1, rebuys: 0, position: null, ko_points: 0, prize_won: 0 };
                         const bd = calcPoints(r);
