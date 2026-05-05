@@ -36,11 +36,14 @@ export default function Estatisticas() {
   const seasons = [...new Set(games.map((g) => g.season_year))].sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const [monthFilter, setMonthFilter] = useState<number | "all">("all");
   const list = seasons.length ? seasons : [currentYear];
 
   const finishedIds = useMemo(
-    () => games.filter((g) => g.status === "finished" && g.season_year === year).map((g) => g.id),
-    [games, year]
+    () => games
+      .filter((g) => g.status === "finished" && g.season_year === year && (monthFilter === "all" || g.month === monthFilter))
+      .map((g) => g.id),
+    [games, year, monthFilter]
   );
 
   const { data: parts = [], isLoading: pLoading } = useQuery({
