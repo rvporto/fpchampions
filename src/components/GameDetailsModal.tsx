@@ -25,7 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { renderAndCapture } from "@/lib/reports";
 import { GameReport } from "@/components/Reports";
 import { recalcRankingAndXp } from "@/lib/recalc";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   gameId: string | null;
