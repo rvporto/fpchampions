@@ -117,6 +117,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   const saveAll = async (finalize: boolean) => {
     if (!game) return;
     try {
+      const asAmountToCharge = isAsGame ? Number(asPrizeAmount || 0) : 0;
       // 1. update game (rakes, totals, status)
       await updateGame.mutateAsync({
         id: game.id,
@@ -126,6 +127,8 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
           croupier_fee: croupier,
           total_pot: totals.totalPot,
           prize_pool: totals.prizePool,
+          is_as_game: isAsGame,
+          as_prize_amount: asAmountToCharge,
           status: finalize ? "finished" : game.status === "scheduled" ? "in_progress" : game.status,
         } as any,
       });
