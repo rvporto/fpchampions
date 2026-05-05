@@ -86,6 +86,8 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       setRakeAs(Number(game.rake_as) || 0);
       setRakeMonth(Number(game.rake_month) || 0);
       setCroupier(Number(game.croupier_fee) || 0);
+      setIsAsGame(Boolean((game as any).is_as_game));
+      setAsPrizeAmount(Number((game as any).as_prize_amount) || 0);
     }
   }, [game?.id]);
 
