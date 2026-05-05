@@ -139,12 +139,16 @@ export default function AdminFinanceiro() {
           {yearChampion ? (
             <div className="text-sm">
               <p>Temporada {year} encerrada · K: <strong className="fpc-text-gold">{profiles.find((p) => p.id === yearChampion.k_user_id)?.nickname ?? "—"}</strong>
-              {yearChampion.as_user_id && <> · Ás: <strong className="fpc-text-gold">{profiles.find((p) => p.id === yearChampion.as_user_id)?.nickname ?? "—"}</strong></>}</p>
+              {(yearChampion.as_user_id || (yearChampion as any).as_temp_player_id) && <> · Ás: <strong className="fpc-text-gold">{
+                yearChampion.as_user_id
+                  ? profiles.find((p) => p.id === yearChampion.as_user_id)?.nickname ?? "—"
+                  : (tempPlayers.find((t) => t.id === (yearChampion as any).as_temp_player_id)?.nickname ?? "—") + " (temp)"
+              }</strong></>}</p>
             </div>
           ) : (
             <CloseSeasonButton year={year} />
           )}
-          <IndicateAsButton year={year} currentAs={yearChampion?.as_user_id ?? null} />
+          <IndicateAsButton year={year} currentAs={yearChampion?.as_user_id ?? null} currentAsTemp={(yearChampion as any)?.as_temp_player_id ?? null} />
         </CardContent>
       </Card>
 
@@ -319,16 +323,23 @@ function CloseSeasonButton({ year }: { year: number }) {
   );
 }
 
-function IndicateAsButton({ year, currentAs }: { year: number; currentAs: string | null }) {
+function IndicateAsButton({ year, currentAs, currentAsTemp }: { year: number; currentAs: string | null; currentAsTemp?: string | null }) {
   const [open, setOpen] = useState(false);
   const { data: profiles = [] } = useProfiles();
-  const [pick, setPick] = useState<string>(currentAs ?? "");
+  const { data: tempPlayers = [] } = useTempPlayers();
+  const initial = currentAs ? `u:${currentAs}` : currentAsTemp ? `t:${currentAsTemp}` : "";
+  const [pick, setPick] = useState<string>(initial);
   const ind = useIndicateAs();
 
   const submit = async () => {
     if (!pick) return toast.error("Escolha o jogador.");
+    const [kind, id] = pick.split(":");
     try {
-      await ind.mutateAsync({ year, as_user_id: pick });
+      await ind.mutateAsync({
+        year,
+        as_user_id: kind === "u" ? id : null,
+        as_temp_player_id: kind === "t" ? id : null,
+      });
       toast.success("Ás do Poker indicado.");
       setOpen(false);
     } catch (e: any) { toast.error(e.message); }
@@ -346,7 +357,8 @@ function IndicateAsButton({ year, currentAs }: { year: number; currentAs: string
           <Select value={pick} onValueChange={setPick}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nickname}</SelectItem>)}
+              {profiles.map((p) => <SelectItem key={`u:${p.id}`} value={`u:${p.id}`}>{p.nickname}</SelectItem>)}
+              {tempPlayers.map((t) => <SelectItem key={`t:${t.id}`} value={`t:${t.id}`}>{t.nickname} (temp)</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
