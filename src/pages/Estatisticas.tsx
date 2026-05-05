@@ -47,7 +47,7 @@ export default function Estatisticas() {
   );
 
   const { data: parts = [], isLoading: pLoading } = useQuery({
-    queryKey: ["stats-parts", year, finishedIds.length],
+    queryKey: ["stats-parts", year, monthFilter, finishedIds.length],
     enabled: finishedIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase.from("game_participations").select("*").in("game_id", finishedIds);
