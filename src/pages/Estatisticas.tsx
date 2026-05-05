@@ -110,7 +110,7 @@ export default function Estatisticas() {
       map.set(key, cur);
     }
     // soma prêmios de meses vencidos ao prize (e portanto ao lucro)
-    for (const mr of monthlyRankings) {
+    for (const mr of monthlyRankings.filter((m) => monthFilter === "all" || m.month === monthFilter)) {
       const isTemp = !!mr.champion_temp_player_id;
       const id = mr.champion_user_id ?? mr.champion_temp_player_id;
       if (!id) continue;
