@@ -226,7 +226,7 @@ export default function Ranking() {
                       {/* Direita: desktop */}
                       <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
                         <p className="font-display text-base text-primary">{formatPoints(row.points)} <span className="text-xs opacity-80">pts</span></p>
-                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                        {row.isTemp && <span onClick={(e) => e.stopPropagation()}><LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} /></span>}
                       </div>
                     </div>
                     {/* LINHA 2 — mobile */}
@@ -235,7 +235,7 @@ export default function Ranking() {
                         {row.games} {row.games === 1 ? "partida" : "partidas"}
                       </div>
                       <div className="flex items-center gap-2">
-                        {row.isTemp && <LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} />}
+                        {row.isTemp && <span onClick={(e) => e.stopPropagation()}><LinkTempPlayerDialog tempPlayerId={row.id} tempPlayerName={row.nickname} /></span>}
                         <p className="font-display text-sm text-primary">{formatPoints(row.points)} <span className="text-[10px] opacity-80">pts</span></p>
                       </div>
                     </div>
