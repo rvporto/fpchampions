@@ -25,6 +25,7 @@ export default function Ranking() {
   const { data: deltaMap } = useSeasonRankingDelta(year);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [profilePlayer, setProfilePlayer] = useState<{ id: string; isTemp: boolean } | null>(null);
 
   const list = ranking ?? [];
   const podium = list.slice(0, 3);
