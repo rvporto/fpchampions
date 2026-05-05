@@ -34,6 +34,7 @@ export interface DbSeasonChampion {
   year: number;
   k_user_id: string | null;
   as_user_id: string | null;
+  as_temp_player_id: string | null;
   closed_at: string;
   as_indicated_at: string | null;
 }
@@ -176,7 +177,7 @@ export function useCloseMonth() {
 export function useCloseSeason() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { year: number; k_user_id: string | null; as_user_id?: string | null }) => {
+    mutationFn: async (input: { year: number; k_user_id: string | null; as_user_id?: string | null; as_temp_player_id?: string | null }) => {
       const { error } = await supabase
         .from("season_champions")
         .upsert(
@@ -184,8 +185,9 @@ export function useCloseSeason() {
             year: input.year,
             k_user_id: input.k_user_id,
             as_user_id: input.as_user_id ?? null,
+            as_temp_player_id: input.as_temp_player_id ?? null,
             closed_at: new Date().toISOString(),
-            as_indicated_at: input.as_user_id ? new Date().toISOString() : null,
+            as_indicated_at: input.as_user_id || input.as_temp_player_id ? new Date().toISOString() : null,
           },
           { onConflict: "year" }
         );
@@ -198,7 +200,7 @@ export function useCloseSeason() {
 export function useIndicateAs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { year: number; as_user_id: string }) => {
+    mutationFn: async (input: { year: number; as_user_id?: string | null; as_temp_player_id?: string | null }) => {
       const { data: existing } = await supabase
         .from("season_champions")
         .select("*")
@@ -210,7 +212,8 @@ export function useIndicateAs() {
           {
             year: input.year,
             k_user_id: (existing as any)?.k_user_id ?? null,
-            as_user_id: input.as_user_id,
+            as_user_id: input.as_user_id ?? null,
+            as_temp_player_id: input.as_temp_player_id ?? null,
             closed_at: (existing as any)?.closed_at ?? new Date().toISOString(),
             as_indicated_at: new Date().toISOString(),
           },
