@@ -114,6 +114,19 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       koPoints: r.ko_points,
     });
 
+  const sortedParticipations = useMemo(() => {
+    if (!game) return [];
+    const list = [...game.participations];
+    if (game.status === "finished") {
+      list.sort((a, b) => {
+        const pa = rows[a.id]?.position ?? a.position ?? 999;
+        const pb = rows[b.id]?.position ?? b.position ?? 999;
+        return pa - pb;
+      });
+    }
+    return list;
+  }, [game, rows]);
+
   const saveAll = async (finalize: boolean) => {
     if (!game) return;
     try {
