@@ -99,9 +99,10 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       // pot = entries*buy_in + rebuys*rebuy_value
       return s + (r.entries * (Number(game?.buy_in) || 0)) + (r.rebuys * (Number(game?.rebuy_value) || 0));
     }, 0);
-    const prizePool = Math.max(0, totalPot - rakeAs - rakeMonth - croupier);
-    return { totalPlayers, totalActions, fm, totalPot, prizePool };
-  }, [rows, rakeAs, rakeMonth, croupier, game?.buy_in, game?.rebuy_value]);
+    const asExtra = isAsGame ? Number(asPrizeAmount || 0) : 0;
+    const prizePool = Math.max(0, totalPot - rakeAs - rakeMonth - croupier) + asExtra;
+    return { totalPlayers, totalActions, fm, totalPot, prizePool, asExtra };
+  }, [rows, rakeAs, rakeMonth, croupier, isAsGame, asPrizeAmount, game?.buy_in, game?.rebuy_value]);
 
   const setRow = (id: string, patch: Partial<Row>) => setRows((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
 
