@@ -178,9 +178,18 @@ export default function Estatisticas() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="font-display text-3xl fpc-text-gold">Estatísticas</h1>
-        <Tabs value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
-          <TabsList>{list.map((y) => <TabsTrigger key={y} value={String(y)}>{y}</TabsTrigger>)}</TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={String(monthFilter)} onValueChange={(v) => setMonthFilter(v === "all" ? "all" : parseInt(v))}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Ano todo</SelectItem>
+              {MONTH_NAMES.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Tabs value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
+            <TabsList>{list.map((y) => <TabsTrigger key={y} value={String(y)}>{y}</TabsTrigger>)}</TabsList>
+          </Tabs>
+        </div>
       </div>
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
