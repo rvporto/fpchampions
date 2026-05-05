@@ -197,7 +197,14 @@ export default function Ranking() {
                 const isTop3 = i < 3;
                 const delta = tab === "season" ? deltaMap?.get(rowKey(row)) : undefined;
                 return (
-                  <div key={`${row.isTemp ? "t" : "u"}-${row.id}`} className={`rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : isTop3 ? "bg-primary/5" : "hover:bg-secondary/40"}`}>
+                  <div
+                    key={`${row.isTemp ? "t" : "u"}-${row.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setProfilePlayer({ id: row.id, isTemp: row.isTemp })}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setProfilePlayer({ id: row.id, isTemp: row.isTemp }); } }}
+                    className={`cursor-pointer rounded-xl px-3 py-2 ${me ? "bg-primary/10 border border-primary/30" : isTop3 ? "bg-primary/5" : "hover:bg-secondary/40"}`}
+                  >
                     {/* LINHA 1 */}
                     <div className="flex items-center gap-3">
                       <div className="flex w-12 items-center gap-1.5 sm:w-14 sm:gap-2 shrink-0">
