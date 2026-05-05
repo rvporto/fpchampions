@@ -246,6 +246,12 @@ export default function Ranking() {
           </Card>
         </>
       )}
+      <PlayerProfileDialog
+        open={!!profilePlayer}
+        onOpenChange={(v) => !v && setProfilePlayer(null)}
+        playerId={profilePlayer?.id ?? null}
+        isTemp={profilePlayer?.isTemp ?? false}
+      />
     </div>
   );
 }
