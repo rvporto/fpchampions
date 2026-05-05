@@ -204,14 +204,46 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display fpc-text-gold flex items-center gap-2 break-words">
+          <DialogTitle className="font-display fpc-text-gold flex items-center gap-2 break-words flex-wrap">
             {game?.name ?? "Carregando..."}
             {game && (
-              <Badge variant={game.status === "finished" ? "default" : game.status === "in_progress" ? "secondary" : "outline"}>
-                {game.status === "finished" ? "Finalizada" : game.status === "in_progress" ? "Em andamento" : "Agendada"}
-              </Badge>
+              <>
+                <Badge variant={game.status === "finished" ? "default" : game.status === "in_progress" ? "secondary" : "outline"}>
+                  {game.status === "finished" ? "Finalizada" : game.status === "in_progress" ? "Em andamento" : "Agendada"}
+                </Badge>
+                {game.status !== "finished" && isAdmin && (
+                  <label className="flex items-center gap-1.5 text-xs font-normal cursor-pointer rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-primary">
+                    <Checkbox checked={isAsGame} onCheckedChange={(v) => setIsAsGame(Boolean(v))} />
+                    <Spade className="size-3.5" />
+                    <span>Ás do Poker</span>
+                  </label>
+                )}
+                {game.status === "finished" && (game as any).is_as_game && (
+                  <Badge className="bg-primary/20 text-primary border border-primary/40 flex items-center gap-1">
+                    <Spade className="size-3" /> Ás do Poker
+                  </Badge>
+                )}
+              </>
             )}
           </DialogTitle>
+          {game && game.status !== "finished" && isAdmin && isAsGame && (
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <Label className="text-xs">Saldo atual do Ás</Label>
+                <div className="h-10 px-3 flex items-center text-sm border border-border rounded-md bg-secondary/40">{formatBRL(asBalance)}</div>
+              </div>
+              <div>
+                <Label className="text-xs">Valor do Ás a acrescer (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={asPrizeAmount}
+                  onChange={(e) => setAsPrizeAmount(parseFloat(e.target.value || "0"))}
+                  placeholder={String(asBalance)}
+                />
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         {isLoading || !game ? (
