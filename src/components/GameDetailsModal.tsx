@@ -153,6 +153,14 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
         });
       }
       if (finalize) {
+        // débita o valor do Ás se for partida do Ás (apenas no momento de finalizar e somente uma vez)
+        if (isAsGame && asAmountToCharge > 0 && !((game as any).is_as_game && Number((game as any).as_prize_amount || 0) > 0)) {
+          await supabase.from("as_pool").insert({
+            game_id: game.id,
+            description: `Premiação Ás do Poker — ${game.name}`,
+            amount: -Math.abs(asAmountToCharge),
+          });
+        }
         try {
           await recalcRankingAndXp();
           await qc.invalidateQueries();
