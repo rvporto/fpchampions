@@ -184,7 +184,7 @@ function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUse
           <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
             <span>{MONTHS_PT[month - 1]} de {year}</span>
             {closed && (
-              <span className="fpc-chip text-[10px] bg-tournament/20 text-tournament border-tournament/40">
+              <span className="fpc-chip text-[10px] bg-tournament/20 text-tournament border-tournament/40 pt-0 my-[5px]">
                 Encerrado
               </span>
             )}
