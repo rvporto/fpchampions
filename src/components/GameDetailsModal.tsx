@@ -50,8 +50,24 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   const [rakeAs, setRakeAs] = useState(0);
   const [rakeMonth, setRakeMonth] = useState(0);
   const [croupier, setCroupier] = useState(0);
+  const [isAsGame, setIsAsGame] = useState(false);
+  const [asPrizeAmount, setAsPrizeAmount] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [toAdd, setToAdd] = useState<SelectedParticipant[]>([]);
+
+  // saldo atual do Ás (rakeAs total - despesas)
+  const { data: asBalance = 0 } = useQuery({
+    queryKey: ["as_balance_current"],
+    queryFn: async () => {
+      const [{ data: gms }, { data: exps }] = await Promise.all([
+        supabase.from("games").select("rake_as").eq("status", "finished"),
+        supabase.from("expenses").select("amount"),
+      ]);
+      const totalAs = (gms ?? []).reduce((s: number, g: any) => s + Number(g.rake_as || 0), 0);
+      const totalExp = (exps ?? []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      return Math.max(0, totalAs - totalExp);
+    },
+  });
 
   useEffect(() => {
     if (game) {
