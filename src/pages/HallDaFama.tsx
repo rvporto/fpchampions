@@ -4,10 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Crown, Trophy, Spade, Award, Sparkles, Loader2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useHallOfFame, type HallEntry } from "@/hooks/useHallOfFame";
+import { useAuth } from "@/contexts/AuthContext";
+import { AddHallChampionDialog } from "@/components/AddHallChampionDialog";
 
 export default function HallDaFama() {
   const [tab, setTab] = useState("rounds");
   const { data, isLoading } = useHallOfFame();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="space-y-6">
