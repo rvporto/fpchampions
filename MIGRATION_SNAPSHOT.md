@@ -462,6 +462,8 @@ ALTER TABLE public.season_champions
 - [ ] `expenses.author_name` existe.
 - [ ] `link_requests` tem `reviewed_at`, `reviewed_by`, `status default 'pending'`.
 - [ ] `profiles.lifetime_winnings` existe.
+- [ ] `games.is_as_game` (bool) e `games.as_prize_amount` (numeric) existem.
+- [ ] `season_champions.as_indicated_at` e `season_champions.as_temp_player_id` existem.
 
 ### Nada foi descartado
 Nenhum SQL anterior foi marcado como obsoleto. Todos os arquivos `0005..0010` ainda devem ser aplicados.
