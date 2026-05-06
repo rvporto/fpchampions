@@ -255,6 +255,7 @@ export function useIndicateAs() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { year: number; as_user_id?: string | null; as_temp_player_id?: string | null }) => {
+      await ensureSeason(input.year);
       const { data: existing } = await supabase
         .from("season_champions")
         .select("*")
