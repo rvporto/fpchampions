@@ -185,6 +185,8 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
                   <StatBlock icon={<Award className="size-4" />} label="Vitórias" value={stats.wins} />
                   <StatBlock icon={<Target className="size-4" />} label="Pódios" value={stats.podiums} />
                   <StatBlock icon={<Calendar className="size-4" />} label="Meses Vencidos" value={stats.monthsWon} />
+                  <StatBlock icon={<Spade className="size-4" />} label="Ás Vencidos" value={stats.asTitles} />
+                  <StatBlock icon={<Crown className="size-4" />} label="K do Poker" value={stats.kTitles} />
                   <StatBlock icon={<Zap className="size-4" />} label="KOs" value={stats.kos} />
                 </>
               )}
