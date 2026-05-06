@@ -8,6 +8,7 @@ import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRanking, useSeasonRankingDelta, rowKey } from "@/hooks/useRanking";
+import { useSeasonChampions } from "@/hooks/useFinance";
 import { recalcRankingAndXp } from "@/lib/recalc";
 import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
