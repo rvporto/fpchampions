@@ -172,6 +172,14 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
                   {display.isTemp && <Badge variant="outline">Temporário</Badge>}
                 </div>
                 {data.profile?.full_name && <p className="text-xs text-muted-foreground">{data.profile.full_name}</p>}
+                {!display.isTemp && liveLevelInfo && (
+                  <div className="mt-2 max-w-sm">
+                    <Progress value={liveLevelInfo.progress * 100} className="h-2" />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {formatPoints(liveLevelInfo.xpInLevel)} / 1000 XP — faltam {formatPoints(liveLevelInfo.xpToNext)} para o nível {liveLevelInfo.level + 1}
+                    </p>
+                  </div>
+                )}
               </div>
               <Select value={String(year)} onValueChange={(v) => setYear(v === "all" ? "all" : parseInt(v))}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
