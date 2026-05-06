@@ -224,6 +224,7 @@ export function useIndicateK() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { year: number; k_user_id?: string | null; k_temp_player_id?: string | null }) => {
+      await ensureSeason(input.year);
       const { data: existing } = await supabase
         .from("season_champions")
         .select("*")
