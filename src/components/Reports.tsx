@@ -17,22 +17,6 @@ const wrap: React.CSSProperties = {
 };
 const headerStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 16, borderBottom: "2px solid #d4a93d", paddingBottom: 16, marginBottom: 24 };
 const goldText: React.CSSProperties = { color: "#e8c34a", fontWeight: 800 };
-const levelBadge: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  marginLeft: 8,
-  padding: "3px 8px",
-  minWidth: 20,
-  height: 20,
-  borderRadius: 6,
-  background: "linear-gradient(135deg,#e8c34a,#d4a93d)",
-  color: "#1a1410",
-  fontSize: 11,
-  fontWeight: 800,
-  lineHeight: 1,
-  verticalAlign: "middle",
-};
 
 function DeltaArrow({ delta }: { delta: number | null | undefined }) {
   if (delta === undefined) return null;
@@ -78,7 +62,6 @@ export function RankingReport({
               </div>
               <div style={{ marginTop: 8, fontWeight: 700 }}>
                 {row.nickname}
-                {!row.isTemp && row.level && <span style={levelBadge}>{row.level}</span>}
               </div>
               <div style={{ ...goldText, fontSize: 22, marginTop: 4 }}>{formatPoints(row.points)} pts</div>
             </div>
@@ -101,7 +84,6 @@ export function RankingReport({
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>
                   {r.nickname}
-                  {!r.isTemp && r.level && <span style={levelBadge}>{r.level}</span>}
                   {r.isTemp && <span style={{ marginLeft: 8, fontSize: 10, color: "#999", textTransform: "uppercase" }}>temp</span>}
                 </div>
                 <div style={{ fontSize: 11, color: "#888" }}>{r.games} partidas · {r.wins} vitórias</div>
@@ -164,7 +146,6 @@ export function GameReport({ game }: { game: GameWithParticipants }) {
                 <PlayerAvatar avatarId={d.avatarId} name={d.nickname} size={28} />
                 <span>
                   {d.nickname}
-                  {!d.isTemp && (p as any).profile?.level && <span style={levelBadge}>{(p as any).profile.level}</span>}
                 </span>
               </div>
               <div style={{ textAlign: "center" }}>{p.entries}</div>
