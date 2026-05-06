@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { LevelBadge } from "@/components/RankIndicators";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbGame, DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
-import { computeAchievements } from "@/lib/achievements";
+import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import { levelFromXp } from "@/lib/xpSystem";
+import { formatPoints } from "@/lib/format";
 import { Loader2, Trophy, Award, Target, Zap, Calendar, Spade, Crown, TrendingUp, Hash } from "lucide-react";
 
 interface Props {
@@ -128,8 +130,22 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
     });
   }, [data, stats]);
 
+  // XP/level computado dinamicamente do histórico completo + conquistas (não depende do filtro de ano)
+  const liveLevelInfo = useMemo(() => {
+    if (!data) return null;
+    const allHistory = data.finished.map((x) => ({ game: x.g, participation: x.p }));
+    const xpFromGames = allHistory.reduce((s, h) => s + Number(h.participation.xp_earned || 0), 0);
+    const playerKey = data.profile?.id ?? data.temp?.id;
+    const monthsWonAll = data.monthly.length;
+    const asAll = data.champs.filter((c: any) => isTemp ? c.as_temp_player_id === playerKey : c.as_user_id === playerKey).length;
+    const kAll = data.champs.filter((c: any) => isTemp ? c.k_temp_player_id === playerKey : c.k_user_id === playerKey).length;
+    const ach = computeAchievements({ history: allHistory, monthsWon: monthsWonAll, asTitles: asAll, kTitles: kAll });
+    const totalXp = xpFromGames + totalAchievementXp(ach);
+    return { totalXp, ...levelFromXp(totalXp) };
+  }, [data, isTemp]);
+
   const display = data?.profile
-    ? { nickname: data.profile.nickname ?? "Jogador", avatarId: data.profile.avatar_url ?? "a1", level: data.profile.level, isTemp: false }
+    ? { nickname: data.profile.nickname ?? "Jogador", avatarId: data.profile.avatar_url ?? "a1", level: liveLevelInfo?.level ?? data.profile.level, isTemp: false }
     : data?.temp
     ? { nickname: data.temp.nickname, avatarId: data.temp.avatar_url ?? "a1", level: undefined, isTemp: true }
     : null;
@@ -156,6 +172,14 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
                   {display.isTemp && <Badge variant="outline">Temporário</Badge>}
                 </div>
                 {data.profile?.full_name && <p className="text-xs text-muted-foreground">{data.profile.full_name}</p>}
+                {!display.isTemp && liveLevelInfo && (
+                  <div className="mt-2 max-w-sm">
+                    <Progress value={liveLevelInfo.progress * 100} className="h-2" />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {formatPoints(liveLevelInfo.xpInLevel)} / 1000 XP — faltam {formatPoints(liveLevelInfo.xpToNext)} para o nível {liveLevelInfo.level + 1}
+                    </p>
+                  </div>
+                )}
               </div>
               <Select value={String(year)} onValueChange={(v) => setYear(v === "all" ? "all" : parseInt(v))}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
