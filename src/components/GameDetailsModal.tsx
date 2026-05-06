@@ -20,7 +20,7 @@ import { participantDisplay, gameTotals } from "@/lib/db-types";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText, Spade } from "lucide-react";
+import { Calendar, Coins, Loader2, Trash2, Trophy, Users, Plus, X, FileText, Spade, Pencil } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { renderAndCapture } from "@/lib/reports";
 import { GameReport } from "@/components/Reports";
