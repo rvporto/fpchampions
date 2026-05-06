@@ -60,7 +60,7 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
           ? supabase.from("monthly_rankings").select("*").eq("champion_temp_player_id", playerId)
           : supabase.from("monthly_rankings").select("*").eq("champion_user_id", playerId),
         isTemp
-          ? supabase.from("season_champions").select("*").eq("as_temp_player_id", playerId)
+          ? supabase.from("season_champions").select("*").or(`k_temp_player_id.eq.${playerId},as_temp_player_id.eq.${playerId}`)
           : supabase.from("season_champions").select("*").or(`k_user_id.eq.${playerId},as_user_id.eq.${playerId}`),
       ]);
 
