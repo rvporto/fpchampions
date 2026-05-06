@@ -130,8 +130,22 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
     });
   }, [data, stats]);
 
+  // XP/level computado dinamicamente do histórico completo + conquistas (não depende do filtro de ano)
+  const liveLevelInfo = useMemo(() => {
+    if (!data) return null;
+    const allHistory = data.finished.map((x) => ({ game: x.g, participation: x.p }));
+    const xpFromGames = allHistory.reduce((s, h) => s + Number(h.participation.xp_earned || 0), 0);
+    const playerKey = data.profile?.id ?? data.temp?.id;
+    const monthsWonAll = data.monthly.length;
+    const asAll = data.champs.filter((c: any) => isTemp ? c.as_temp_player_id === playerKey : c.as_user_id === playerKey).length;
+    const kAll = data.champs.filter((c: any) => isTemp ? c.k_temp_player_id === playerKey : c.k_user_id === playerKey).length;
+    const ach = computeAchievements({ history: allHistory, monthsWon: monthsWonAll, asTitles: asAll, kTitles: kAll });
+    const totalXp = xpFromGames + totalAchievementXp(ach);
+    return { totalXp, ...levelFromXp(totalXp) };
+  }, [data, isTemp]);
+
   const display = data?.profile
-    ? { nickname: data.profile.nickname ?? "Jogador", avatarId: data.profile.avatar_url ?? "a1", level: data.profile.level, isTemp: false }
+    ? { nickname: data.profile.nickname ?? "Jogador", avatarId: data.profile.avatar_url ?? "a1", level: liveLevelInfo?.level ?? data.profile.level, isTemp: false }
     : data?.temp
     ? { nickname: data.temp.nickname, avatarId: data.temp.avatar_url ?? "a1", level: undefined, isTemp: true }
     : null;
