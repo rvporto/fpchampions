@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { LevelBadge } from "@/components/RankIndicators";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbGame, DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
-import { computeAchievements } from "@/lib/achievements";
+import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import { levelFromXp } from "@/lib/xpSystem";
+import { formatPoints } from "@/lib/format";
 import { Loader2, Trophy, Award, Target, Zap, Calendar, Spade, Crown, TrendingUp, Hash } from "lucide-react";
 
 interface Props {
