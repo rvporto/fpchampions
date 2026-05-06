@@ -175,7 +175,19 @@ export function useCloseMonth() {
   });
 }
 
-export function useCloseSeason() {
+async function ensureSeason(year: number) {
+  // Garante que exista linha em public.seasons (FK season_champions_season_year_fkey)
+  const { error } = await supabase
+    .from("seasons" as any)
+    .upsert({ year, season_year: year } as any, { onConflict: "year" });
+  if (error && !/duplicate|already exists/i.test(error.message)) {
+    // tenta variação só com year
+    const { error: e2 } = await supabase.from("seasons" as any).upsert({ year } as any, { onConflict: "year" });
+    if (e2) console.warn("ensureSeason failed", e2);
+  }
+}
+
+
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { year: number; k_user_id: string | null; k_temp_player_id?: string | null }) => {
