@@ -36,10 +36,12 @@ export default function HallDaFama() {
           <TabsContent value="months" className="mt-4">
             <CountList title="Vencedores do Mês" icon={<Sparkles className="size-5" />} entries={data?.months ?? []} unit="meses" />
           </TabsContent>
-          <TabsContent value="as" className="mt-4">
+          <TabsContent value="as" className="mt-4 space-y-3">
+            {isAdmin && <div className="flex justify-end"><AddHallChampionDialog kind="as" /></div>}
             <ChampionGrid title="Ás do Poker — Indicados" entries={data?.asChampions ?? []} />
           </TabsContent>
-          <TabsContent value="year" className="mt-4">
+          <TabsContent value="year" className="mt-4 space-y-3">
+            {isAdmin && <div className="flex justify-end"><AddHallChampionDialog kind="k" /></div>}
             <ChampionGrid title="K do Poker — Campeões do Ano" entries={data?.yearChampions ?? []} />
           </TabsContent>
         </Tabs>
