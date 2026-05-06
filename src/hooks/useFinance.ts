@@ -178,7 +178,7 @@ export function useCloseMonth() {
 export function useCloseSeason() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { year: number; k_user_id: string | null }) => {
+    mutationFn: async (input: { year: number; k_user_id: string | null; k_temp_player_id?: string | null }) => {
       const { data: existing } = await supabase
         .from("season_champions")
         .select("*")
@@ -191,10 +191,41 @@ export function useCloseSeason() {
             year: input.year,
             season_year: input.year,
             k_user_id: input.k_user_id,
+            k_temp_player_id: input.k_temp_player_id ?? null,
             // preserva indicação do Ás (não relacionada ao encerramento)
             as_user_id: (existing as any)?.as_user_id ?? null,
             as_temp_player_id: (existing as any)?.as_temp_player_id ?? null,
             closed_at: new Date().toISOString(),
+            as_indicated_at: (existing as any)?.as_indicated_at ?? null,
+          } as any,
+          { onConflict: "year" }
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["season_champions"] }),
+  });
+}
+
+export function useIndicateK() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { year: number; k_user_id?: string | null; k_temp_player_id?: string | null }) => {
+      const { data: existing } = await supabase
+        .from("season_champions")
+        .select("*")
+        .eq("year", input.year)
+        .maybeSingle();
+      const { error } = await supabase
+        .from("season_champions")
+        .upsert(
+          {
+            year: input.year,
+            season_year: input.year,
+            k_user_id: input.k_user_id ?? null,
+            k_temp_player_id: input.k_temp_player_id ?? null,
+            as_user_id: (existing as any)?.as_user_id ?? null,
+            as_temp_player_id: (existing as any)?.as_temp_player_id ?? null,
+            closed_at: (existing as any)?.closed_at ?? new Date().toISOString(),
             as_indicated_at: (existing as any)?.as_indicated_at ?? null,
           } as any,
           { onConflict: "year" }
@@ -222,6 +253,7 @@ export function useIndicateAs() {
             season_year: input.year,
             // preserva K do Poker e estado de encerramento
             k_user_id: (existing as any)?.k_user_id ?? null,
+            k_temp_player_id: (existing as any)?.k_temp_player_id ?? null,
             as_user_id: input.as_user_id ?? null,
             as_temp_player_id: input.as_temp_player_id ?? null,
             closed_at: (existing as any)?.closed_at ?? new Date().toISOString(),
