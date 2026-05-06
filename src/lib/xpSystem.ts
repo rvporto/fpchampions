@@ -26,7 +26,8 @@ export function levelFromXp(xp: number) {
 export type AchievementCode =
   | "aprendiz" | "engajado" | "veterano"
   | "vencedor_rr" | "k_poker_rr" | "back_to_back_rr"
-  | "as_poker_rr" | "vencedor_mes_rr" | "consistente_rr";
+  | "as_poker_rr" | "vencedor_mes_rr" | "consistente_rr"
+  | "sniper_rr" | "fenix_rr" | "tribuna_rr";
 
 export interface AchievementDef {
   code: AchievementCode;
@@ -47,4 +48,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { code: "as_poker_rr", name: "Ás do Poker", description: "Vencedor do Ás", xpReward: 1000, repeatable: true, icon: "🂡" },
   { code: "vencedor_mes_rr", name: "Vencedor do Mês", description: "Cada mês conquistado", xpReward: 500, repeatable: true, icon: "📅" },
   { code: "consistente_rr", name: "Consistente", description: "2 pódios em sequência", xpReward: 300, repeatable: true, icon: "⭐" },
+  { code: "sniper_rr", name: "Sniper", description: "A cada 50 KOs acumulados", xpReward: 300, repeatable: true, icon: "🎯" },
+  { code: "fenix_rr", name: "Fênix", description: "Venceu uma partida com 4+ re-entradas", xpReward: 200, repeatable: true, icon: "🔆" },
+  { code: "tribuna_rr", name: "Tribuna", description: "A cada 10 pódios conquistados", xpReward: 1000, repeatable: true, icon: "🏛️" },
 ];
