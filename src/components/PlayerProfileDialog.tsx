@@ -60,22 +60,27 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
           ? supabase.from("monthly_rankings").select("*").eq("champion_temp_player_id", playerId)
           : supabase.from("monthly_rankings").select("*").eq("champion_user_id", playerId),
         isTemp
-          ? Promise.resolve({ data: [] as any[] })
+          ? supabase.from("season_champions").select("*").eq("as_temp_player_id", playerId)
           : supabase.from("season_champions").select("*").or(`k_user_id.eq.${playerId},as_user_id.eq.${playerId}`),
       ]);
 
-      // ranking position by year (todas temporadas)
+      // ranking position by year (todas temporadas que o jogador participou)
       const seasonsSet = new Set<number>(finished.map((x) => x.g.season_year));
       const seasons = [...seasonsSet].sort((a, b) => b - a);
       const positions = new Map<number, number>();
       for (const y of seasons) {
-        const ids = finished.filter((x) => x.g.season_year === y).map((x) => x.g.id);
-        if (!ids.length) continue;
-        // calcular posição: agregação simples por jogador na temporada
+        // Buscar TODAS as partidas finalizadas da temporada (não apenas as do jogador)
+        const { data: yearGames } = await supabase
+          .from("games")
+          .select("id")
+          .eq("season_year", y)
+          .eq("status", "finished");
+        const yearGameIds = (yearGames ?? []).map((g: any) => g.id as string);
+        if (!yearGameIds.length) continue;
         const { data: allParts } = await supabase
           .from("game_participations")
           .select("user_id, temp_player_id, ranking_points, game_id")
-          .in("game_id", finished.filter((x) => x.g.season_year === y).map((x) => x.g.id));
+          .in("game_id", yearGameIds);
         const totals = new Map<string, number>();
         for (const ap of (allParts ?? []) as any[]) {
           const k = ap.user_id ? `u:${ap.user_id}` : ap.temp_player_id ? `t:${ap.temp_player_id}` : null;
@@ -106,8 +111,8 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
       monthsWon: filteredMonthly.length,
       kos: filteredFinished.reduce((s, x) => s + Number(x.p.ko_points || 0), 0),
       entries: filteredFinished.reduce((s, x) => s + Number(x.p.entries || 0) + Number(x.p.rebuys || 0), 0),
-      asTitles: filteredChamps.filter((c: any) => c.as_user_id === playerId).length,
-      kTitles: filteredChamps.filter((c: any) => c.k_user_id === playerId).length,
+      asTitles: filteredChamps.filter((c: any) => isTemp ? c.as_temp_player_id === playerId : c.as_user_id === playerId).length,
+      kTitles: filteredChamps.filter((c: any) => !isTemp && c.k_user_id === playerId).length,
       rankPos: typeof year === "number" ? data.positions.get(year) ?? null : null,
       history: filteredFinished.map((x) => ({ game: x.g, participation: x.p })),
     };
@@ -180,6 +185,8 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
                   <StatBlock icon={<Award className="size-4" />} label="Vitórias" value={stats.wins} />
                   <StatBlock icon={<Target className="size-4" />} label="Pódios" value={stats.podiums} />
                   <StatBlock icon={<Calendar className="size-4" />} label="Meses Vencidos" value={stats.monthsWon} />
+                  <StatBlock icon={<Spade className="size-4" />} label="Ás Vencidos" value={stats.asTitles} />
+                  <StatBlock icon={<Crown className="size-4" />} label="K do Poker" value={stats.kTitles} />
                   <StatBlock icon={<Zap className="size-4" />} label="KOs" value={stats.kos} />
                 </>
               )}
