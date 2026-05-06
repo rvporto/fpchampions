@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
+import type { DbGame, DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
+import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
+import { levelFromXp } from "@/lib/xpSystem";
 
 export interface RankingRow {
   id: string;
