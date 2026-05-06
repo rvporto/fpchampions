@@ -133,22 +133,42 @@ export default function AdminFinanceiro() {
       </Card>
 
       <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Crown className="size-5" />Encerrar Temporada</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">O top 1 do ranking sazonal vira <strong className="fpc-text-gold">K do Poker</strong>. O <strong className="fpc-text-gold">Ás do Poker</strong> é indicado pelo admin.</p>
-          {yearChampion ? (
-            <div className="text-sm">
-              <p>Temporada {year} encerrada · K: <strong className="fpc-text-gold">{profiles.find((p) => p.id === yearChampion.k_user_id)?.nickname ?? "—"}</strong>
-              {(yearChampion.as_user_id || (yearChampion as any).as_temp_player_id) && <> · Ás: <strong className="fpc-text-gold">{
-                yearChampion.as_user_id
-                  ? profiles.find((p) => p.id === yearChampion.as_user_id)?.nickname ?? "—"
-                  : (tempPlayers.find((t) => t.id === (yearChampion as any).as_temp_player_id)?.nickname ?? "—") + " (temp)"
-              }</strong></>}</p>
+        <CardHeader><CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Crown className="size-5" />Títulos da Temporada {year}</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1 text-sm">
+            <p className="text-muted-foreground">
+              <strong className="fpc-text-gold">K do Poker</strong>: título dado ao 1º colocado do ranking anual ao encerrar a temporada.
+            </p>
+            <p className="text-muted-foreground">
+              <strong className="fpc-text-gold">Ás do Poker</strong>: torneio único da temporada — o admin indica o vencedor (independente do encerramento).
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border/60 p-3 space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">K do Poker</p>
+            {yearChampion?.k_user_id ? (
+              <p className="text-sm">Temporada encerrada · <strong className="fpc-text-gold">{profiles.find((p) => p.id === yearChampion.k_user_id)?.nickname ?? "—"}</strong></p>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-muted-foreground">Temporada em andamento.</span>
+                <CloseSeasonButton year={year} />
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border/60 p-3 space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Ás do Poker</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-sm">
+                {yearChampion?.as_user_id
+                  ? <>Indicado: <strong className="fpc-text-gold">{profiles.find((p) => p.id === yearChampion.as_user_id)?.nickname ?? "—"}</strong></>
+                  : (yearChampion as any)?.as_temp_player_id
+                    ? <>Indicado: <strong className="fpc-text-gold">{tempPlayers.find((t) => t.id === (yearChampion as any).as_temp_player_id)?.nickname ?? "—"} (temp)</strong></>
+                    : <span className="text-muted-foreground">Ainda não indicado.</span>}
+              </span>
+              <IndicateAsButton year={year} currentAs={yearChampion?.as_user_id ?? null} currentAsTemp={(yearChampion as any)?.as_temp_player_id ?? null} />
             </div>
-          ) : (
-            <CloseSeasonButton year={year} />
-          )}
-          <IndicateAsButton year={year} currentAs={yearChampion?.as_user_id ?? null} currentAsTemp={(yearChampion as any)?.as_temp_player_id ?? null} />
+          </div>
         </CardContent>
       </Card>
 

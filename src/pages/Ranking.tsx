@@ -8,6 +8,7 @@ import { formatPoints, ordinal, MONTHS_PT } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRanking, useSeasonRankingDelta, rowKey } from "@/hooks/useRanking";
+import { useSeasonChampions } from "@/hooks/useFinance";
 import { recalcRankingAndXp } from "@/lib/recalc";
 import { renderAndCapture } from "@/lib/reports";
 import { RankingReport } from "@/components/Reports";
@@ -23,6 +24,8 @@ export default function Ranking() {
   const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
   const { data: deltaMap } = useSeasonRankingDelta(year);
+  const { data: champions = [] } = useSeasonChampions();
+  const seasonClosed = champions.find((c) => c.year === year && !!c.k_user_id);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [profilePlayer, setProfilePlayer] = useState<{ id: string; isTemp: boolean } | null>(null);
@@ -56,8 +59,15 @@ export default function Ranking() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-3xl fpc-text-gold">Ranking — Temporada {year}</h1>
-          <p className="text-sm text-muted-foreground">Pontuação acumulada por partidas finalizadas.</p>
+          <h1 className="font-display text-3xl fpc-text-gold flex items-center gap-2 flex-wrap">
+            Ranking — Temporada {year}
+            {seasonClosed && (
+              <span className="rounded-full bg-warning/20 border border-warning/50 px-2 py-0.5 text-[10px] uppercase font-bold text-warning">Encerrada</span>
+            )}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {seasonClosed ? "Temporada encerrada · K do Poker definido." : "Pontuação acumulada por partidas finalizadas."}
+          </p>
         </div>
         <div className="flex gap-2">
           {isAdmin && (
