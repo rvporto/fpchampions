@@ -31,22 +31,69 @@ export function useHallOfFame() {
       const gamesList = (games ?? []) as DbGame[];
       const gameIds = gamesList.map((g) => g.id);
 
-      const [{ data: champs }, { data: profsAll }] = await Promise.all([
+      const [{ data: champs }, { data: profsAll }, { data: monthlyClosed }, { data: tempsAll }] = await Promise.all([
         supabase.from("season_champions").select("*"),
         supabase.from("profiles").select("id, nickname, avatar_url"),
+        supabase.from("monthly_rankings").select("*"),
+        supabase.from("temporary_players").select("id, nickname, avatar_url"),
       ]);
       const profAllMap = new Map((profsAll ?? []).map((p: any) => [p.id, p]));
+      const tempAllMap = new Map((tempsAll ?? []).map((t: any) => [t.id, t]));
+
+      // Helper: monta entry a partir de monthly_rankings (mês encerrado)
+      const buildMonthEntry = (row: any): HallEntry | null => {
+        if (row.champion_user_id) {
+          const p: any = profAllMap.get(row.champion_user_id);
+          return { key: `u:${row.champion_user_id}`, isTemp: false, id: row.champion_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1 };
+        }
+        if (row.champion_temp_player_id) {
+          const t: any = tempAllMap.get(row.champion_temp_player_id);
+          return { key: `t:${row.champion_temp_player_id}`, isTemp: true, id: row.champion_temp_player_id, nickname: t?.nickname ?? "—", avatarId: t?.avatar_url ?? "a1", count: 1 };
+        }
+        return null;
+      };
+
+      // K do Poker: apenas temporadas oficialmente encerradas
+      const buildYearChamps = (): HallEntry[] => (champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => {
+        const p: any = profAllMap.get(c.k_user_id);
+        return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
+      });
+
+      // Ás do Poker: apenas indicações oficiais
+      const buildAsChamps = (): HallEntry[] => {
+        const list: HallEntry[] = [];
+        for (const c of (champs ?? []) as any[]) {
+          if (c.as_user_id) {
+            const p: any = profAllMap.get(c.as_user_id);
+            list.push({ key: `u:${c.as_user_id}`, isTemp: false, id: c.as_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year });
+          } else if (c.as_temp_player_id) {
+            const t: any = tempAllMap.get(c.as_temp_player_id);
+            list.push({ key: `t:${c.as_temp_player_id}`, isTemp: true, id: c.as_temp_player_id, nickname: t?.nickname ?? "—", avatarId: t?.avatar_url ?? "a1", count: 1, year: c.year });
+          }
+        }
+        return list;
+      };
+
+      // Meses: apenas os encerrados (monthly_rankings)
+      const buildMonths = (): HallEntry[] => {
+        const map = new Map<string, HallEntry>();
+        for (const row of (monthlyClosed ?? []) as any[]) {
+          const e = buildMonthEntry(row);
+          if (!e) continue;
+          const cur = map.get(e.key) ?? { ...e, count: 0 };
+          cur.count += 1;
+          map.set(e.key, cur);
+        }
+        return [...map.values()];
+      };
 
       if (!gameIds.length) {
-        const yearChampions = (champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => {
-          const p: any = profAllMap.get(c.k_user_id);
-          return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
-        });
-        const asChampions = (champs ?? []).filter((c: any) => c.as_user_id).map((c: any) => {
-          const p: any = profAllMap.get(c.as_user_id);
-          return { key: `u:${c.as_user_id}`, isTemp: false, id: c.as_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
-        });
-        return { rounds: [], months: [], yearChampions, asChampions };
+        return {
+          rounds: [],
+          months: buildMonths(),
+          yearChampions: buildYearChamps(),
+          asChampions: buildAsChamps(),
+        };
       }
 
       const { data: parts, error: e2 } = await supabase
@@ -86,66 +133,11 @@ export function useHallOfFame() {
         roundsMap.set(m.key, e);
       }
 
-      const gMap = new Map(gamesList.map((g) => [g.id, g]));
-      const monthAgg = new Map<string, Map<string, { entry: HallEntry; pts: number }>>();
-      const yearAgg = new Map<number, Map<string, { entry: HallEntry; pts: number }>>();
-
-      for (const p of (parts ?? []) as DbParticipation[]) {
-        if (!p.user_id && !p.temp_player_id) continue;
-        const g = gMap.get(p.game_id);
-        if (!g) continue;
-        const m = meta(p);
-        const monthKey = `${g.season_year}-${g.month}`;
-        const monthInner = monthAgg.get(monthKey) ?? new Map();
-        const cur = monthInner.get(m.key) ?? { entry: { ...m, count: 0 }, pts: 0 };
-        cur.pts += Number(p.ranking_points || 0);
-        monthInner.set(m.key, cur);
-        monthAgg.set(monthKey, monthInner);
-
-        const yearInner = yearAgg.get(g.season_year) ?? new Map();
-        const cur2 = yearInner.get(m.key) ?? { entry: { ...m, count: 0 }, pts: 0 };
-        cur2.pts += Number(p.ranking_points || 0);
-        yearInner.set(m.key, cur2);
-        yearAgg.set(g.season_year, yearInner);
-      }
-
-      const monthsMap = new Map<string, HallEntry>();
-      for (const inner of monthAgg.values()) {
-        const arr = [...inner.values()].sort((a, b) => b.pts - a.pts);
-        if (!arr.length || arr[0].pts <= 0) continue;
-        const w = arr[0].entry;
-        const e = monthsMap.get(w.key) ?? { ...w, count: 0 };
-        e.count += 1;
-        monthsMap.set(w.key, e);
-      }
-
-      // Year champions: priorizar season_champions oficiais; senão usar agregação
-      const officialKYears = new Set((champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => c.year));
-      const yearChampions: HallEntry[] = (champs ?? [])
-        .filter((c: any) => c.k_user_id)
-        .map((c: any) => {
-          const p: any = profAllMap.get(c.k_user_id);
-          return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year };
-        });
-      for (const [year, inner] of yearAgg.entries()) {
-        if (officialKYears.has(year)) continue;
-        const arr = [...inner.values()].sort((a, b) => b.pts - a.pts);
-        if (!arr.length || arr[0].pts <= 0) continue;
-        yearChampions.push({ ...arr[0].entry, year, count: 1 });
-      }
-
-      const asChampions: HallEntry[] = (champs ?? [])
-        .filter((c: any) => c.as_user_id)
-        .map((c: any) => {
-          const p: any = profAllMap.get(c.as_user_id);
-          return { key: `u:${c.as_user_id}`, isTemp: false, id: c.as_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year };
-        });
-
       return {
         rounds: [...roundsMap.values()].sort((a, b) => b.count - a.count),
-        months: [...monthsMap.values()].sort((a, b) => b.count - a.count),
-        yearChampions: yearChampions.sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
-        asChampions: asChampions.sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+        months: buildMonths().sort((a, b) => b.count - a.count),
+        yearChampions: buildYearChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+        asChampions: buildAsChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
       };
     },
   });
