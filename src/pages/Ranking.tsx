@@ -24,6 +24,8 @@ export default function Ranking() {
   const { user, isAdmin } = useAuth();
   const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
   const { data: deltaMap } = useSeasonRankingDelta(year);
+  const { data: champions = [] } = useSeasonChampions();
+  const seasonClosed = champions.find((c) => c.year === year && !!c.k_user_id);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [profilePlayer, setProfilePlayer] = useState<{ id: string; isTemp: boolean } | null>(null);
