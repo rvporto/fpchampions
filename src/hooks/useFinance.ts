@@ -183,12 +183,13 @@ export function useCloseSeason() {
         .upsert(
           {
             year: input.year,
+            season_year: input.year,
             k_user_id: input.k_user_id,
             as_user_id: input.as_user_id ?? null,
             as_temp_player_id: input.as_temp_player_id ?? null,
             closed_at: new Date().toISOString(),
             as_indicated_at: input.as_user_id || input.as_temp_player_id ? new Date().toISOString() : null,
-          },
+          } as any,
           { onConflict: "year" }
         );
       if (error) throw error;
