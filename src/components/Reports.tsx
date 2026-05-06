@@ -78,7 +78,6 @@ export function RankingReport({
               </div>
               <div style={{ marginTop: 8, fontWeight: 700 }}>
                 {row.nickname}
-                {!row.isTemp && row.level && <span style={levelBadge}>{row.level}</span>}
               </div>
               <div style={{ ...goldText, fontSize: 22, marginTop: 4 }}>{formatPoints(row.points)} pts</div>
             </div>
