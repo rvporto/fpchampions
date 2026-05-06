@@ -5,7 +5,7 @@ import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import type { DbGame, DbParticipation } from "@/lib/db-types";
 
 type MonthlyChampionRow = { champion_user_id: string | null };
-type SeasonChampionRow = { k_user_id: string | null; as_user_id: string | null };
+type SeasonChampionRow = { k_user_id: string | null; as_user_id: string | null; k_temp_player_id?: string | null; as_temp_player_id?: string | null };
 type ProfileIdRow = { id: string };
 
 /**
