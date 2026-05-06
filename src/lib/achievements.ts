@@ -17,6 +17,9 @@ interface Input {
 export function computeAchievements({ history, monthsWon, asTitles, kTitles }: Input): ComputedAchievement[] {
   const games = history.length;
   const wins = history.filter((h) => h.participation.position === 1).length;
+  const podiumsTotal = history.filter((h) => !!h.participation.position && h.participation.position! <= 3).length;
+  const kosTotal = history.reduce((s, h) => s + Number(h.participation.ko_points || 0), 0);
+  const fenixWins = history.filter((h) => h.participation.position === 1 && Number(h.participation.rebuys || 0) >= 4).length;
 
   // sequências (ordem cronológica ascendente)
   const asc = [...history].sort((a, b) => +new Date(a.game.date) - +new Date(b.game.date));
@@ -41,6 +44,9 @@ export function computeAchievements({ history, monthsWon, asTitles, kTitles }: I
       case "as_poker_rr": return asTitles;
       case "vencedor_mes_rr": return monthsWon;
       case "consistente_rr": return consistente;
+      case "sniper_rr": return Math.floor(kosTotal / 50);
+      case "fenix_rr": return fenixWins;
+      case "tribuna_rr": return Math.floor(podiumsTotal / 10);
       default: return 0;
     }
   };
