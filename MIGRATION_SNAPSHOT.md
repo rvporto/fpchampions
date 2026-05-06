@@ -417,6 +417,28 @@ alter table public.expenses
   add column if not exists author_name text;
 ```
 
+### 6.7 `0011_games_as_flag.sql` — Marcação de partida do Ás
+```sql
+ALTER TABLE public.games
+  ADD COLUMN IF NOT EXISTS is_as_game boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS as_prize_amount numeric NOT NULL DEFAULT 0;
+```
+Permite marcar uma partida como "do Ás" e usar o saldo do pool do Ás como premiação extra.
+
+### 6.8 `0012_season_champions_as_indicated_at.sql`
+```sql
+ALTER TABLE public.season_champions
+  ADD COLUMN IF NOT EXISTS as_indicated_at TIMESTAMP WITH TIME ZONE;
+```
+(Idempotente — também aparece em `0005`. Mantido para reforço.)
+
+### 6.9 `0013_season_champions_as_temp_player.sql` — Ás pode ser jogador temporário
+```sql
+ALTER TABLE public.season_champions
+  ADD COLUMN IF NOT EXISTS as_temp_player_id uuid
+  REFERENCES public.temporary_players(id) ON DELETE SET NULL;
+```
+
 ### Ordem recomendada para reconstruir o banco do zero
 1. Bloco "Schema base" da §6.0
 2. `0005_phase5.sql`
@@ -425,6 +447,9 @@ alter table public.expenses
 5. `0008_monthly_rankings_unique_index.sql`
 6. `0009_link_requests_table.sql`
 7. `0010_expenses_author_name.sql`
+8. `0011_games_as_flag.sql`
+9. `0012_season_champions_as_indicated_at.sql`
+10. `0013_season_champions_as_temp_player.sql`
 
 ### Checklist de validação do banco
 - [ ] Enums `app_role` e `game_status` existem.
