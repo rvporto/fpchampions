@@ -33,6 +33,7 @@ export interface DbSeasonChampion {
   id: string;
   year: number;
   k_user_id: string | null;
+  k_temp_player_id: string | null;
   as_user_id: string | null;
   as_temp_player_id: string | null;
   closed_at: string;
