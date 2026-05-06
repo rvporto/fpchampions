@@ -18,14 +18,19 @@ const wrap: React.CSSProperties = {
 const headerStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 16, borderBottom: "2px solid #d4a93d", paddingBottom: 16, marginBottom: 24 };
 const goldText: React.CSSProperties = { color: "#e8c34a", fontWeight: 800 };
 const levelBadge: React.CSSProperties = {
-  display: "inline-block",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   marginLeft: 8,
-  padding: "1px 6px",
+  padding: "3px 8px",
+  minWidth: 20,
+  height: 20,
   borderRadius: 6,
   background: "linear-gradient(135deg,#e8c34a,#d4a93d)",
   color: "#1a1410",
-  fontSize: 10,
+  fontSize: 11,
   fontWeight: 800,
+  lineHeight: 1,
   verticalAlign: "middle",
 };
 
