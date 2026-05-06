@@ -212,12 +212,13 @@ export function useIndicateAs() {
         .upsert(
           {
             year: input.year,
+            season_year: input.year,
             k_user_id: (existing as any)?.k_user_id ?? null,
             as_user_id: input.as_user_id ?? null,
             as_temp_player_id: input.as_temp_player_id ?? null,
             closed_at: (existing as any)?.closed_at ?? new Date().toISOString(),
             as_indicated_at: new Date().toISOString(),
-          },
+          } as any,
           { onConflict: "year" }
         );
       if (error) throw error;
