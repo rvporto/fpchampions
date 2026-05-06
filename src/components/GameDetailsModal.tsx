@@ -467,6 +467,21 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                         </Button>
                       </div>
                       <div className="flex gap-2">
+                        {game.status === "finished" && (
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              if (!confirm("Reabrir esta partida para edição? Ela voltará ao status 'Em andamento'.")) return;
+                              try {
+                                await updateGame.mutateAsync({ id: game.id, patch: { status: "in_progress" } as any });
+                                try { await recalcRankingAndXp(); await qc.invalidateQueries(); } catch {}
+                                toast.success("Partida reaberta para edição.");
+                              } catch (e: any) { toast.error(e.message); }
+                            }}
+                          >
+                            <Pencil className="size-4 mr-1" /> Editar / Reabrir
+                          </Button>
+                        )}
                         <Button variant="outline" onClick={() => saveAll(false)} disabled={updateGame.isPending || updatePart.isPending}>
                           Salvar
                         </Button>
