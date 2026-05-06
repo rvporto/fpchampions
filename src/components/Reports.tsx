@@ -162,7 +162,6 @@ export function GameReport({ game }: { game: GameWithParticipants }) {
                 <PlayerAvatar avatarId={d.avatarId} name={d.nickname} size={28} />
                 <span>
                   {d.nickname}
-                  {!d.isTemp && (p as any).profile?.level && <span style={levelBadge}>{(p as any).profile.level}</span>}
                 </span>
               </div>
               <div style={{ textAlign: "center" }}>{p.entries}</div>
