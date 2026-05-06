@@ -112,7 +112,7 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
       kos: filteredFinished.reduce((s, x) => s + Number(x.p.ko_points || 0), 0),
       entries: filteredFinished.reduce((s, x) => s + Number(x.p.entries || 0) + Number(x.p.rebuys || 0), 0),
       asTitles: filteredChamps.filter((c: any) => isTemp ? c.as_temp_player_id === playerId : c.as_user_id === playerId).length,
-      kTitles: filteredChamps.filter((c: any) => !isTemp && c.k_user_id === playerId).length,
+      kTitles: filteredChamps.filter((c: any) => isTemp ? c.k_temp_player_id === playerId : c.k_user_id === playerId).length,
       rankPos: typeof year === "number" ? data.positions.get(year) ?? null : null,
       history: filteredFinished.map((x) => ({ game: x.g, participation: x.p })),
     };
