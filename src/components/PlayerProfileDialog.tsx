@@ -60,7 +60,7 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
           ? supabase.from("monthly_rankings").select("*").eq("champion_temp_player_id", playerId)
           : supabase.from("monthly_rankings").select("*").eq("champion_user_id", playerId),
         isTemp
-          ? supabase.from("season_champions").select("*").eq("as_temp_player_id", playerId)
+          ? supabase.from("season_champions").select("*").or(`k_temp_player_id.eq.${playerId},as_temp_player_id.eq.${playerId}`)
           : supabase.from("season_champions").select("*").or(`k_user_id.eq.${playerId},as_user_id.eq.${playerId}`),
       ]);
 
@@ -112,7 +112,7 @@ export function PlayerProfileDialog({ open, onOpenChange, playerId, isTemp }: Pr
       kos: filteredFinished.reduce((s, x) => s + Number(x.p.ko_points || 0), 0),
       entries: filteredFinished.reduce((s, x) => s + Number(x.p.entries || 0) + Number(x.p.rebuys || 0), 0),
       asTitles: filteredChamps.filter((c: any) => isTemp ? c.as_temp_player_id === playerId : c.as_user_id === playerId).length,
-      kTitles: filteredChamps.filter((c: any) => !isTemp && c.k_user_id === playerId).length,
+      kTitles: filteredChamps.filter((c: any) => isTemp ? c.k_temp_player_id === playerId : c.k_user_id === playerId).length,
       rankPos: typeof year === "number" ? data.positions.get(year) ?? null : null,
       history: filteredFinished.map((x) => ({ game: x.g, participation: x.p })),
     };

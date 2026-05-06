@@ -53,11 +53,20 @@ export function useHallOfFame() {
         return null;
       };
 
-      // K do Poker: apenas temporadas oficialmente encerradas
-      const buildYearChamps = (): HallEntry[] => (champs ?? []).filter((c: any) => c.k_user_id).map((c: any) => {
-        const p: any = profAllMap.get(c.k_user_id);
-        return { key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year } as HallEntry;
-      });
+      // K do Poker: temporadas encerradas (user ou temp)
+      const buildYearChamps = (): HallEntry[] => {
+        const list: HallEntry[] = [];
+        for (const c of (champs ?? []) as any[]) {
+          if (c.k_user_id) {
+            const p: any = profAllMap.get(c.k_user_id);
+            list.push({ key: `u:${c.k_user_id}`, isTemp: false, id: c.k_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: c.year });
+          } else if (c.k_temp_player_id) {
+            const t: any = tempAllMap.get(c.k_temp_player_id);
+            list.push({ key: `t:${c.k_temp_player_id}`, isTemp: true, id: c.k_temp_player_id, nickname: t?.nickname ?? "—", avatarId: t?.avatar_url ?? "a1", count: 1, year: c.year });
+          }
+        }
+        return list;
+      };
 
       // Ás do Poker: apenas indicações oficiais
       const buildAsChamps = (): HallEntry[] => {

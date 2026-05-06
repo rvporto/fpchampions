@@ -4,10 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Crown, Trophy, Spade, Award, Sparkles, Loader2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useHallOfFame, type HallEntry } from "@/hooks/useHallOfFame";
+import { useAuth } from "@/contexts/AuthContext";
+import { AddHallChampionDialog } from "@/components/AddHallChampionDialog";
 
 export default function HallDaFama() {
   const [tab, setTab] = useState("rounds");
   const { data, isLoading } = useHallOfFame();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -33,10 +36,12 @@ export default function HallDaFama() {
           <TabsContent value="months" className="mt-4">
             <CountList title="Vencedores do Mês" icon={<Sparkles className="size-5" />} entries={data?.months ?? []} unit="meses" />
           </TabsContent>
-          <TabsContent value="as" className="mt-4">
+          <TabsContent value="as" className="mt-4 space-y-3">
+            {isAdmin && <div className="flex justify-end"><AddHallChampionDialog kind="as" /></div>}
             <ChampionGrid title="Ás do Poker — Indicados" entries={data?.asChampions ?? []} />
           </TabsContent>
-          <TabsContent value="year" className="mt-4">
+          <TabsContent value="year" className="mt-4 space-y-3">
+            {isAdmin && <div className="flex justify-end"><AddHallChampionDialog kind="k" /></div>}
             <ChampionGrid title="K do Poker — Campeões do Ano" entries={data?.yearChampions ?? []} />
           </TabsContent>
         </Tabs>

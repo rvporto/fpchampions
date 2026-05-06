@@ -5,7 +5,7 @@ import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import type { DbGame, DbParticipation } from "@/lib/db-types";
 
 type MonthlyChampionRow = { champion_user_id: string | null };
-type SeasonChampionRow = { k_user_id: string | null; as_user_id: string | null };
+type SeasonChampionRow = { k_user_id: string | null; as_user_id: string | null; k_temp_player_id?: string | null; as_temp_player_id?: string | null };
 type ProfileIdRow = { id: string };
 
 /**
@@ -78,7 +78,7 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
 
   const [{ data: months, error: monthsError }, { data: seasons, error: seasonsError }] = await Promise.all([
     supabase.from("monthly_rankings").select("champion_user_id"),
-    supabase.from("season_champions").select("k_user_id, as_user_id"),
+    supabase.from("season_champions").select("k_user_id, as_user_id, k_temp_player_id, as_temp_player_id"),
   ]);
   if (monthsError) console.warn("monthly achievements ignored", monthsError);
   if (seasonsError) console.warn("season achievements ignored", seasonsError);
