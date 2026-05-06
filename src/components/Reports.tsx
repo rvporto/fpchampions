@@ -100,7 +100,6 @@ export function RankingReport({
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>
                   {r.nickname}
-                  {!r.isTemp && r.level && <span style={levelBadge}>{r.level}</span>}
                   {r.isTemp && <span style={{ marginLeft: 8, fontSize: 10, color: "#999", textTransform: "uppercase" }}>temp</span>}
                 </div>
                 <div style={{ fontSize: 11, color: "#888" }}>{r.games} partidas · {r.wins} vitórias</div>
