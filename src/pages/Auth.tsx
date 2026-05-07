@@ -25,30 +25,52 @@ export default function Auth() {
   }, [user, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Bem-vindo de volta!");
-    navigate("/", { replace: true });
-  };
+  e.preventDefault();
+  setBusy(true);
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  setBusy(false);
+  
+  if (error) {
+    if (error.message.includes("Email not confirmed")) {
+      return toast.error("Por favor, confirme seu e-mail antes de entrar.");
+    }
+    return toast.error(error.message);
+  }
+  
+  toast.success("Bem-vindo de volta!");
+  navigate("/", { replace: true });
+};
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { nickname: nickname || email.split("@")[0] },
-      },
+  e.preventDefault();
+  setBusy(true);
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Importante: Redireciona o usuário de volta para o seu site após clicar no link
+      emailRedirectTo: `${window.location.origin}/auth`,
+      data: { nickname: nickname || email.split("@")[0] },
+    },
+  });
+  
+  setBusy(false);
+
+  if (error) return toast.error(error.message);
+
+  // Se a confirmação de e-mail estiver ativa, data.session será null
+  if (data.user && !data.session) {
+    toast.success("Verifique sua caixa de entrada para confirmar seu e-mail!", {
+      duration: 10000, // Deixa a mensagem por mais tempo (10s)
     });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Conta criada! Verifique seu e-mail se a confirmação estiver ativa.");
-  };
+    // Limpa os campos para o usuário saber que o processo parou aqui
+    setPassword("");
+  } else {
+    toast.success("Conta criada e logada!");
+    navigate("/", { replace: true });
+  }
+};
 
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
