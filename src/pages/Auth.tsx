@@ -72,6 +72,22 @@ export default function Auth() {
   }
 };
 
+const handleForgotPassword = async () => {
+    if (!email) {
+      return toast.error("Digite seu e-mail para receber o link de recuperação.");
+  }
+  
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+    if (error) {
+    toast.error(error.message);
+  } else {
+    toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+  }
+};
+
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -81,72 +97,84 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-bg">
-      <Card className="fpc-card w-full max-w-md">
-        <CardContent className="p-8">
-          <div className="flex justify-center mb-6">
-            <Logo size={64} />
-          </div>
-          <h1 className="font-display text-2xl text-center fpc-text-gold">Família Poker Champions</h1>
-          <p className="text-sm text-muted-foreground text-center mt-1">Acompanhe partidas, rankings e conquistas.</p>
+  <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-bg">
+    <Card className="fpc-card w-full max-w-md">
+      <CardContent className="p-8">
+        <div className="flex justify-center mb-6">
+          <Logo size={64} />
+        </div>
+        <h1 className="font-display text-2xl text-center fpc-text-gold">Família Poker Champions</h1>
+        <p className="text-sm text-muted-foreground text-center mt-1">Acompanhe partidas, rankings e conquistas.</p>
 
-          <Tabs defaultValue="signin" className="mt-6">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="signin">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="signin" className="mt-6">
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="signin">Entrar</TabsTrigger>
+            <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="signin" className="space-y-3 mt-4">
-              <form onSubmit={handleSignIn} className="space-y-3">
-                <div>
-                  <Label>E-mail</Label>
-                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+          <TabsContent value="signin" className="space-y-3 mt-4">
+            <form onSubmit={handleSignIn} className="space-y-3">
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+              </div>
+              <div>
+                <Label>Senha</Label>
+                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                <div className="flex justify-end">
+                  <Button 
+                    variant="link" 
+                    type="button" 
+                    onClick={handleForgotPassword}
+                    className="px-0 font-normal text-[10px] text-muted-foreground hover:text-gold"
+                  >
+                    Esqueceu sua senha?
+                  </Button>
                 </div>
-                <div>
-                  <Label>Senha</Label>
-                  <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-                </div>
-                <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
-                </Button>
-              </form>
-            </TabsContent>
+              </div> 
 
-            <TabsContent value="signup" className="space-y-3 mt-4">
-              <form onSubmit={handleSignUp} className="space-y-3">
-                <div>
-                  <Label>Apelido</Label>
-                  <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Como te chamam na mesa" />
-                </div>
-                <div>
-                  <Label>E-mail</Label>
-                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
-                </div>
-                <div>
-                  <Label>Senha</Label>
-                  <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
-                </div>
-                <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : "Criar conta"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+              <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
+                {busy ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
+              </Button>
+            </form>
+          </TabsContent>
 
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center"><span className="bg-card px-2 text-xs text-muted-foreground">ou</span></div>
-          </div>
+          <TabsContent value="signup" className="space-y-3 mt-4">
+            <form onSubmit={handleSignUp} className="space-y-3">
+              <div>
+                <Label>Apelido</Label>
+                <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Como te chamam na mesa" />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+              </div>
+              <div>
+                <Label>Senha</Label>
+                <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              </div>
+              <Button type="submit" disabled={busy} className="w-full bg-gradient-gold text-primary-foreground">
+                {busy ? <Loader2 className="size-4 animate-spin" /> : "Criar conta"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
 
-          <Button variant="outline" className="w-full" onClick={handleGoogle}>
-            Continuar com Google
-          </Button>
+        <div className="relative my-5">
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+          <div className="relative flex justify-center"><span className="bg-card px-2 text-xs text-muted-foreground">ou</span></div>
+        </div>
 
-          <p className="text-xs text-muted-foreground text-center mt-5">
-            <Link to="/" className="text-primary hover:underline">Voltar ao site</Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        <Button variant="outline" className="w-full" onClick={handleGoogle}>
+          Continuar com Google
+        </Button>
+
+        <p className="text-xs text-muted-foreground text-center mt-5">
+          <Link to="/" className="text-primary hover:underline">Voltar ao site</Link>
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+);
 }
+
