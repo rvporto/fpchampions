@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-pwa.png', 'robots.txt'],
+      includeAssets: ['favicon.ico', 'logo.png', 'robots.txt'],
       manifest: {
         name: 'Família Poker Champions',
         short_name: 'FPC',
@@ -25,13 +25,13 @@ export default defineConfig(({ mode }) => ({
         orientation: 'portrait',
         icons: [
           {
-            src: 'icon-pwa.png',
+            src: 'logo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'icon-pwa.png',
+            src: 'logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
