@@ -66,7 +66,8 @@ export default function Dashboard() {
   }, [user, profile?.xp, lifetimeStats, champions, monthly]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
-  if (user && !profile) return <Navigate to="/complete-profile" replace />;
+  if (user && !profile && !loading) return <Navigate to="/complete-profile" replace />;
+
 
   const myMonthIndex = user ? monthlyRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
   const mySeasonIndex = user ? seasonRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
