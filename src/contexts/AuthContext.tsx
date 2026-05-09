@@ -35,64 +35,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Função agora retorna os dados para serem usados de forma síncrona no fluxo de carregamento
   const loadExtras = async (uid: string) => {
-    try {
-      const [{ data: prof }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", uid),
-      ]);
-      setProfile((prof as Profile | null) ?? null);
-      setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
-    } catch (error) {
-      console.error("Erro ao carregar dados extras:", error);
-    }
+    const [{ data: prof }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+    ]);
+    setProfile((prof as Profile | null) ?? null);
+    setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
   };
 
   useEffect(() => {
-    // Monitora mudanças de estado (Login/Logout)
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, sess) => {
+    // Listener PRIMEIRO
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
-      
       if (sess?.user) {
-        setLoading(true); // Garante que volta ao estado de loading ao mudar usuário
-        await loadExtras(sess.user.id);
+        // Defer Supabase calls fora do callback
+        setTimeout(() => loadExtras(sess.user.id), 0);
       } else {
         setProfile(null);
         setIsAdmin(false);
       }
-      setLoading(false); // Só libera o loading após processar o perfil
     });
 
-    // Inicialização da sessão atual
-    const initSession = async () => {
-      try {
-        const { data: { session: sess } } = await supabase.auth.getSession();
-        setSession(sess);
-        setUser(sess?.user ?? null);
-        
-        if (sess?.user) {
-          await loadExtras(sess.user.id);
-        }
-      } catch (error) {
-        console.error("Erro na sessão inicial:", error);
-      } finally {
-        setLoading(false); // Finaliza o loading inicial
-      }
-    };
-
-    initSession();
+    // Depois pega sessão atual
+    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) loadExtras(sess.user.id).finally(() => setLoading(false));
+      else setLoading(false);
+    });
 
     return () => sub.subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
-    setLoading(true);
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
-    setLoading(false);
   };
 
   const refreshProfile = async () => {
@@ -111,4 +91,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth deve ser usado dentro de AuthProvider");
   return ctx;
 }
-
