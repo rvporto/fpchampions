@@ -86,8 +86,8 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       setRakeAs(Number(game.rake_as) || 0);
       setRakeMonth(Number(game.rake_month) || 0);
       setCroupier(Number(game.croupier_fee) || 0);
-      setIsAsGame(Boolean((game as any).is_as_game));
-      setAsPrizeAmount(Number((game as any).as_prize_amount) || 0);
+      setIsAsGame(Boolean(game.is_as_game));
+      setAsPrizeAmount(Number(game.as_prize_amount) || 0);
     }
   }, [game?.id]);
 
@@ -167,7 +167,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       }
       if (finalize) {
         // débita o valor do Ás se for partida do Ás (apenas no momento de finalizar e somente uma vez)
-        if (isAsGame && asAmountToCharge > 0 && !((game as any).is_as_game && Number((game as any).as_prize_amount || 0) > 0)) {
+        if (isAsGame && asAmountToCharge > 0 && !(game.is_as_game && Number(game.as_prize_amount || 0) > 0)) {
           await supabase.from("as_pool").insert({
             game_id: game.id,
             description: `Premiação Ás do Poker — ${game.name}`,
@@ -231,7 +231,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
                     <span>Ás do Poker</span>
                   </label>
                 )}
-                {game.status === "finished" && (game as any).is_as_game && (
+                {game.status === "finished" && game.is_as_game && (
                   <Badge className="bg-primary/20 text-primary border border-primary/40 flex items-center gap-1">
                     <Spade className="size-3" /> Ás do Poker
                   </Badge>

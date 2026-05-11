@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { calcTournamentPoints } from "@/lib/scoring";
-import { xpForGame } from "@/lib/xpSystem";
+import { xpForGame, levelFromXp } from "@/lib/xpSystem";
 import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import type { DbGame, DbParticipation } from "@/lib/db-types";
 
@@ -111,7 +111,7 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       kTitles: kByUser.get(userId) ?? 0,
     });
     const xp = (xpByUser.get(userId) ?? 0) + totalAchievementXp(achievements);
-    const level = Math.floor(xp / 1000) + 1;
+    const {level} = levelFromXp(xp);
     const { error: pe } = await supabase
       .from("profiles")
       .update({ xp, level, current_rank: rankByUser.get(userId) ?? null })

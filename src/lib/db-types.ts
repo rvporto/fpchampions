@@ -42,6 +42,8 @@ export interface DbGame {
   status: GameStatus;
   description: string | null;
   created_at: string;
+  is_as_game: boolean;
+  as_prize_amount: number;
 }
 
 export interface DbParticipation {
