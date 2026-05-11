@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Trophy, Flame, Target, TrendingUp, Crown, ChevronRight, FileText, Sparkles, Loader2, Award, Swords } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import { useAllMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
 import { LevelBadge } from "@/components/RankIndicators";
+import { GameQuickViewModal } from "@/components/GameQuickViewModal";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -72,7 +73,7 @@ export default function Dashboard() {
   const myMonthIndex = user ? monthlyRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
   const mySeasonIndex = user ? seasonRanking.findIndex((r) => !r.isTemp && r.id === user.id) : -1;
   const lvl = levelFromXp(computedXp);
-  const recentGames = games.filter((g) => g.status === "finished").slice(0, 3);
+  const recentGames = games.filter((g) => g.status === "finished").slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -292,22 +293,29 @@ function SeasonTopCard({ ranking, year, loading, currentUserId }: any) {
 }
 
 function RecentGamesCard({ games }: { games: any[] }) {
+  const [quickId, setQuickId] = useState<string | null>(null);
   return (
     <Card className="fpc-card">
       <CardHeader><CardTitle className="font-display fpc-text-gold flex items-center gap-2"><Sparkles className="size-5" />Partidas Recentes</CardTitle></CardHeader>
       <CardContent className="space-y-2">
         {games.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas finalizadas.</p>}
         {games.map((g) => (
-          <Link to="/partidas" key={g.id} className="block fpc-card fpc-hover-gold p-3">
+          <button
+            key={g.id}
+            type="button"
+            onClick={() => setQuickId(g.id)}
+            className="w-full text-left fpc-card fpc-hover-gold p-3"
+          >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-medium text-sm break-words line-clamp-2">{g.name}</p>
                 <p className="text-xs text-muted-foreground">{formatDate(g.date)}</p>
               </div>
             </div>
-          </Link>
+          </button>
         ))}
       </CardContent>
+      <GameQuickViewModal gameId={quickId} onOpenChange={(v) => !v && setQuickId(null)} />
     </Card>
   );
 }

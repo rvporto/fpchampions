@@ -12,7 +12,7 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, public: true },
   { to: "/partidas", label: "Partidas", icon: Spade, public: true },
   { to: "/ranking", label: "Ranking", icon: Trophy, public: true },
-  { to: "/hall-da-fama", label: "Hall da Fama", icon: Award, public: false },
+  { to: "/hall-da-fama", label: "Hall da Fama", icon: Award, public: true },
   { to: "/perfil", label: "Perfil", icon: UserCircle2, public: false },
 ];
 

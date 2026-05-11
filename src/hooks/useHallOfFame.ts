@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { DbGame, DbParticipation, DbProfile, DbTempPlayer } from "@/lib/db-types";
+import type { DbGame, DbParticipation } from "@/lib/db-types";
 
 export interface HallEntry {
   key: string;
@@ -13,11 +13,26 @@ export interface HallEntry {
 }
 
 export interface HallData {
-  rounds: HallEntry[]; // vencedores de partidas (acumulado)
-  months: HallEntry[]; // meses vencidos
-  yearChampions: HallEntry[]; // K do Poker (oficial via season_champions, fallback agregação)
-  asChampions: HallEntry[]; // Ás do Poker (indicado pelo admin)
+  roundsAll: HallEntry[];
+  roundsByYear: Record<number, HallEntry[]>;
+  monthsAll: HallEntry[];
+  monthsByYear: Record<number, HallEntry[]>;
+  yearChampions: HallEntry[];
+  asChampions: HallEntry[];
+  years: number[];
 }
+
+const sortDesc = (entries: HallEntry[]) => entries.sort((a, b) => b.count - a.count);
+
+const aggregate = (entries: HallEntry[]): HallEntry[] => {
+  const map = new Map<string, HallEntry>();
+  for (const e of entries) {
+    const cur = map.get(e.key);
+    if (cur) cur.count += e.count;
+    else map.set(e.key, { ...e, count: e.count });
+  }
+  return sortDesc([...map.values()]);
+};
 
 export function useHallOfFame() {
   return useQuery({
@@ -30,6 +45,7 @@ export function useHallOfFame() {
       if (error) throw error;
       const gamesList = (games ?? []) as DbGame[];
       const gameIds = gamesList.map((g) => g.id);
+      const gameYearMap = new Map(gamesList.map((g) => [g.id, g.season_year]));
 
       const [{ data: champs }, { data: profsAll }, { data: monthlyClosed }, { data: tempsAll }] = await Promise.all([
         supabase.from("season_champions").select("*"),
@@ -40,20 +56,18 @@ export function useHallOfFame() {
       const profAllMap = new Map((profsAll ?? []).map((p: any) => [p.id, p]));
       const tempAllMap = new Map((tempsAll ?? []).map((t: any) => [t.id, t]));
 
-      // Helper: monta entry a partir de monthly_rankings (mês encerrado)
       const buildMonthEntry = (row: any): HallEntry | null => {
         if (row.champion_user_id) {
           const p: any = profAllMap.get(row.champion_user_id);
-          return { key: `u:${row.champion_user_id}`, isTemp: false, id: row.champion_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1 };
+          return { key: `u:${row.champion_user_id}`, isTemp: false, id: row.champion_user_id, nickname: p?.nickname ?? "—", avatarId: p?.avatar_url ?? "a1", count: 1, year: row.season_year };
         }
         if (row.champion_temp_player_id) {
           const t: any = tempAllMap.get(row.champion_temp_player_id);
-          return { key: `t:${row.champion_temp_player_id}`, isTemp: true, id: row.champion_temp_player_id, nickname: t?.nickname ?? "—", avatarId: t?.avatar_url ?? "a1", count: 1 };
+          return { key: `t:${row.champion_temp_player_id}`, isTemp: true, id: row.champion_temp_player_id, nickname: t?.nickname ?? "—", avatarId: t?.avatar_url ?? "a1", count: 1, year: row.season_year };
         }
         return null;
       };
 
-      // K do Poker: temporadas encerradas (user ou temp)
       const buildYearChamps = (): HallEntry[] => {
         const list: HallEntry[] = [];
         for (const c of (champs ?? []) as any[]) {
@@ -68,7 +82,6 @@ export function useHallOfFame() {
         return list;
       };
 
-      // Ás do Poker: apenas indicações oficiais
       const buildAsChamps = (): HallEntry[] => {
         const list: HallEntry[] = [];
         for (const c of (champs ?? []) as any[]) {
@@ -83,25 +96,43 @@ export function useHallOfFame() {
         return list;
       };
 
-      // Meses: apenas os encerrados (monthly_rankings)
-      const buildMonths = (): HallEntry[] => {
-        const map = new Map<string, HallEntry>();
-        for (const row of (monthlyClosed ?? []) as any[]) {
-          const e = buildMonthEntry(row);
-          if (!e) continue;
-          const cur = map.get(e.key) ?? { ...e, count: 0 };
-          cur.count += 1;
-          map.set(e.key, cur);
-        }
-        return [...map.values()];
-      };
+      // Months by year
+      const monthsByYearMap: Record<number, Map<string, HallEntry>> = {};
+      const monthsAllList: HallEntry[] = [];
+      for (const row of (monthlyClosed ?? []) as any[]) {
+        const e = buildMonthEntry(row);
+        if (!e) continue;
+        const y = row.season_year as number;
+        if (!monthsByYearMap[y]) monthsByYearMap[y] = new Map();
+        const cur = monthsByYearMap[y].get(e.key);
+        if (cur) cur.count += 1;
+        else monthsByYearMap[y].set(e.key, { ...e, count: 1 });
+        monthsAllList.push(e);
+      }
+      const monthsByYear: Record<number, HallEntry[]> = {};
+      for (const [y, m] of Object.entries(monthsByYearMap)) {
+        monthsByYear[Number(y)] = sortDesc([...m.values()]);
+      }
+      const monthsAll = aggregate(monthsAllList);
+
+      // Years set
+      const yearsSet = new Set<number>();
+      for (const g of gamesList) yearsSet.add(g.season_year);
+      for (const r of (monthlyClosed ?? []) as any[]) yearsSet.add(r.season_year);
+      for (const c of (champs ?? []) as any[]) if (c.year) yearsSet.add(c.year);
+
+      const yearChampions = buildYearChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+      const asChampions = buildAsChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
 
       if (!gameIds.length) {
         return {
-          rounds: [],
-          months: buildMonths(),
-          yearChampions: buildYearChamps(),
-          asChampions: buildAsChamps(),
+          roundsAll: [],
+          roundsByYear: {},
+          monthsAll,
+          monthsByYear,
+          yearChampions,
+          asChampions,
+          years: [...yearsSet].sort((a, b) => b - a),
         };
       }
 
@@ -132,21 +163,36 @@ export function useHallOfFame() {
         };
       };
 
-      const roundsMap = new Map<string, HallEntry>();
+      const roundsByYearMap: Record<number, Map<string, HallEntry>> = {};
+      const roundsAllMap = new Map<string, HallEntry>();
       for (const p of (parts ?? []) as DbParticipation[]) {
         if (p.position !== 1) continue;
         if (!p.user_id && !p.temp_player_id) continue;
+        const y = gameYearMap.get(p.game_id);
+        if (y == null) continue;
         const m = meta(p);
-        const e = roundsMap.get(m.key) ?? { ...m, count: 0 };
-        e.count += 1;
-        roundsMap.set(m.key, e);
+        if (!roundsByYearMap[y]) roundsByYearMap[y] = new Map();
+        const cy = roundsByYearMap[y].get(m.key);
+        if (cy) cy.count += 1;
+        else roundsByYearMap[y].set(m.key, { ...m, count: 1, year: y });
+        const ca = roundsAllMap.get(m.key);
+        if (ca) ca.count += 1;
+        else roundsAllMap.set(m.key, { ...m, count: 1 });
       }
+      const roundsByYear: Record<number, HallEntry[]> = {};
+      for (const [y, m] of Object.entries(roundsByYearMap)) {
+        roundsByYear[Number(y)] = sortDesc([...m.values()]);
+      }
+      const roundsAll = sortDesc([...roundsAllMap.values()]);
 
       return {
-        rounds: [...roundsMap.values()].sort((a, b) => b.count - a.count),
-        months: buildMonths().sort((a, b) => b.count - a.count),
-        yearChampions: buildYearChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
-        asChampions: buildAsChamps().sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+        roundsAll,
+        roundsByYear,
+        monthsAll,
+        monthsByYear,
+        yearChampions,
+        asChampions,
+        years: [...yearsSet].sort((a, b) => b - a),
       };
     },
   });

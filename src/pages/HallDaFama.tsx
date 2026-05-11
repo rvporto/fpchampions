@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Crown, Trophy, Spade, Award, Sparkles, Loader2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useHallOfFame, type HallEntry } from "@/hooks/useHallOfFame";
@@ -11,6 +12,24 @@ export default function HallDaFama() {
   const [tab, setTab] = useState("rounds");
   const { data, isLoading } = useHallOfFame();
   const { isAdmin } = useAuth();
+
+  const currentYear = new Date().getFullYear();
+  const [roundsYear, setRoundsYear] = useState<string>(String(currentYear));
+  const [monthsYear, setMonthsYear] = useState<string>(String(currentYear));
+
+  const yearOptions = data?.years ?? [];
+
+  const roundsList = useMemo<HallEntry[]>(() => {
+    if (!data) return [];
+    if (roundsYear === "all") return data.roundsAll;
+    return data.roundsByYear[Number(roundsYear)] ?? [];
+  }, [data, roundsYear]);
+
+  const monthsList = useMemo<HallEntry[]>(() => {
+    if (!data) return [];
+    if (monthsYear === "all") return data.monthsAll;
+    return data.monthsByYear[Number(monthsYear)] ?? [];
+  }, [data, monthsYear]);
 
   return (
     <div className="space-y-6">
@@ -30,11 +49,13 @@ export default function HallDaFama() {
             <TabsTrigger value="year"><Crown className="size-4 mr-1" />K</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="rounds" className="mt-4">
-            <CountList title="Vencedores de Rodada" icon={<Trophy className="size-5" />} entries={data?.rounds ?? []} unit="vitórias" />
+          <TabsContent value="rounds" className="mt-4 space-y-3">
+            <SeasonFilter value={roundsYear} onChange={setRoundsYear} years={yearOptions} />
+            <CountList title="Vencedores de Rodada" icon={<Trophy className="size-5" />} entries={roundsList} unit="vitórias" />
           </TabsContent>
-          <TabsContent value="months" className="mt-4">
-            <CountList title="Vencedores do Mês" icon={<Sparkles className="size-5" />} entries={data?.months ?? []} unit="meses" />
+          <TabsContent value="months" className="mt-4 space-y-3">
+            <SeasonFilter value={monthsYear} onChange={setMonthsYear} years={yearOptions} />
+            <CountList title="Vencedores do Mês" icon={<Sparkles className="size-5" />} entries={monthsList} unit="meses" />
           </TabsContent>
           <TabsContent value="as" className="mt-4 space-y-3">
             {isAdmin && <div className="flex justify-end"><AddHallChampionDialog kind="as" /></div>}
@@ -46,6 +67,21 @@ export default function HallDaFama() {
           </TabsContent>
         </Tabs>
       )}
+    </div>
+  );
+}
+
+function SeasonFilter({ value, onChange, years }: { value: string; onChange: (v: string) => void; years: number[] }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">Temporada</span>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas as temporadas</SelectItem>
+          {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

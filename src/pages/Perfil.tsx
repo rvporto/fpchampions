@@ -10,6 +10,8 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { InvalidGenderDialog } from "@/components/InvalidGenderDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { PlayerStats } from "@/hooks/usePlayerStats";
 import { levelFromXp } from "@/lib/xpSystem";
 import { formatBRL, formatDate, formatPoints, ordinal } from "@/lib/format";
 import { Coins, Pencil, Target, Trophy, Sparkles, Loader2, LogOut, Award, Swords } from "lucide-react";
@@ -96,33 +98,69 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold">Histórico de Partidas</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {statsLoading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
-          {!statsLoading && (stats?.history.length ?? 0) === 0 && (
-            <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas registradas ainda.</p>
-          )}
-          {stats?.history.map((h) => (
-            <div key={h.participation.id} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-secondary/40">
-              <div className="min-w-0">
-                <p className="font-medium text-sm break-words line-clamp-2">{h.game.name}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(h.game.date)}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-display text-primary">
-                  {h.participation.position ? `${h.participation.position}º` : "—"} · {formatPoints(Number(h.participation.ranking_points || 0))} pts
-                </p>
-                <p className="text-xs text-muted-foreground">+{h.participation.xp_earned} XP · {h.participation.ko_points} KOs</p>
-              </div>
-            </div>
-          ))}
-          {stats && stats.history.length > 0 && (
-            <div className="text-xs text-muted-foreground text-center mt-2">Total de KOs: {stats.ko}</div>
-          )}
-        </CardContent>
-      </Card>
+      <HistoryCard stats={stats} statsLoading={statsLoading} />
     </div>
+  );
+}
+
+function HistoryCard({ stats, statsLoading }: { stats: PlayerStats | undefined; statsLoading: boolean }) {
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState<string>(String(currentYear));
+  const [visible, setVisible] = useState(5);
+
+  const years = (() => {
+    const ys = new Set<number>([currentYear, ...((stats?.history ?? []).map((h) => h.game.season_year))]);
+    return [...ys].sort((a, b) => b - a);
+  })();
+
+  const filtered = (stats?.history ?? []).filter((h) =>
+    year === "all" ? true : h.game.season_year === Number(year)
+  );
+  const shown = filtered.slice(0, visible);
+
+  const onYearChange = (v: string) => { setYear(v); setVisible(5); };
+
+  return (
+    <Card className="fpc-card">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardTitle className="font-display fpc-text-gold">Histórico de Partidas</CardTitle>
+        <Select value={year} onValueChange={onYearChange}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as temporadas</SelectItem>
+            {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {statsLoading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
+        {!statsLoading && filtered.length === 0 && (
+          <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas registradas para o filtro selecionado.</p>
+        )}
+        {shown.map((h) => (
+          <div key={h.participation.id} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-secondary/40">
+            <div className="min-w-0">
+              <p className="font-medium text-sm break-words line-clamp-2">{h.game.name}</p>
+              <p className="text-xs text-muted-foreground">{formatDate(h.game.date)}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="font-display text-primary">
+                {h.participation.position ? `${h.participation.position}º` : "—"} · {formatPoints(Number(h.participation.ranking_points || 0))} pts
+              </p>
+              <p className="text-xs text-muted-foreground">+{h.participation.xp_earned} XP · {h.participation.ko_points} KOs</p>
+            </div>
+          </div>
+        ))}
+        {filtered.length > visible && (
+          <Button variant="outline" className="w-full" onClick={() => setVisible((v) => v + 5)}>
+            Mostrar mais ({filtered.length - visible} restantes)
+          </Button>
+        )}
+        {stats && stats.history.length > 0 && (
+          <div className="text-xs text-muted-foreground text-center mt-2">Total de KOs: {stats.ko}</div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
