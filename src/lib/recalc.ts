@@ -34,8 +34,7 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
     byGame.get(p.game_id)!.push(p);
   }
 
-  // 1ª passagem: calcula tudo em memória, sem tocar no banco
-  const partUpdates: { id: string; ranking_points: number; xp_earned: number; is_winner: boolean }[] = [];
+  let updatedParts = 0;
   const xpByUser = new Map<string, number>();
   const historyByUser = new Map<string, { game: DbGame; participation: DbParticipation }[]>();
   const currentYearPoints = new Map<string, number>();
@@ -52,12 +51,14 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       const xp = p.position
         ? xpForGame({ position: p.position, koCount: p.ko_points || 0 })
         : 0;
-      const is_winner = p.position === 1;
-
-      partUpdates.push({ id: p.id, ranking_points: points, xp_earned: xp, is_winner });
-
+      const { error: ue } = await supabase
+        .from("game_participations")
+        .update({ ranking_points: points, xp_earned: xp, is_winner: p.position === 1 })
+        .eq("id", p.id);
+      if (ue) throw ue;
+      updatedParts += 1;
       if (p.user_id) {
-        const participation = { ...p, ranking_points: points, xp_earned: xp, is_winner };
+        const participation = { ...p, ranking_points: points, xp_earned: xp, is_winner: p.position === 1 };
         xpByUser.set(p.user_id, (xpByUser.get(p.user_id) || 0) + xp);
         if (game) {
           const history = historyByUser.get(p.user_id) ?? [];
@@ -70,18 +71,6 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       }
     }
   }
-
-  // updates de participações em paralelo (sem await em série)
-  const updatePromises = partUpdates.map(({ id, ranking_points, xp_earned, is_winner }) =>
-    supabase
-      .from("game_participations")
-      .update({ ranking_points, xp_earned, is_winner })
-      .eq("id", id)
-  );
-  const results = await Promise.all(updatePromises);
-  const firstError = results.find((r) => r.error)?.error;
-  if (firstError) throw firstError;
-  const updatedParts = partUpdates.length;
 
   const monthsByUser = new Map<string, number>();
   const asByUser = new Map<string, number>();
@@ -111,8 +100,8 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
   const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id");
   if (profilesError) throw profilesError;
 
-  // 2ª passagem: monta array de updates de perfis em memória
-  const profileUpdates: { id: string; xp: number; level: number; current_rank: number | null }[] = [];
+  // atualiza profiles.xp, level e ranking com XP de partidas + conquistas, inclusive histórico já existente
+  let updatedProfiles = 0;
   for (const profile of profiles ?? []) {
     const userId = (profile as ProfileIdRow).id;
     const achievements = computeAchievements({
@@ -122,21 +111,14 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       kTitles: kByUser.get(userId) ?? 0,
     });
     const xp = (xpByUser.get(userId) ?? 0) + totalAchievementXp(achievements);
-    const { level } = levelFromXp(xp);
-    profileUpdates.push({ id: userId, xp, level, current_rank: rankByUser.get(userId) ?? null });
+    const {level} = levelFromXp(xp);
+    const { error: pe } = await supabase
+      .from("profiles")
+      .update({ xp, level, current_rank: rankByUser.get(userId) ?? null })
+      .eq("id", userId);
+    if (pe) throw pe;
+    updatedProfiles += 1;
   }
 
-  // um único upsert para todos os perfis
-  const profilePromises = profileUpdates.map(({ id, xp, level, current_rank }) =>
-  supabase
-    .from("profiles")
-    .update({ xp, level, current_rank })
-    .eq("id", id)
-);
-const profileResults = await Promise.all(profilePromises);
-const firstProfileError = profileResults.find((r) => r.error)?.error;
-if (firstProfileError) throw firstProfileError;
-const updatedProfiles = profileUpdates.length;
+  return { games: list.length, participations: updatedParts, profiles: updatedProfiles };
 }
-
-
