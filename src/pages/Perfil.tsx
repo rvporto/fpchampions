@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { InvalidGenderDialog } from "@/components/InvalidGenderDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PlayerStats } from "@/hooks/usePlayerStats";
