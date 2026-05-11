@@ -34,7 +34,8 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
     byGame.get(p.game_id)!.push(p);
   }
 
-  let updatedParts = 0;
+  // 1ª passagem: calcula tudo em memória, sem tocar no banco
+  const partUpdates: { id: string; ranking_points: number; xp_earned: number; is_winner: boolean }[] = [];
   const xpByUser = new Map<string, number>();
   const historyByUser = new Map<string, { game: DbGame; participation: DbParticipation }[]>();
   const currentYearPoints = new Map<string, number>();
@@ -51,14 +52,13 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       const xp = p.position
         ? xpForGame({ position: p.position, koCount: p.ko_points || 0 })
         : 0;
-      const { error: ue } = await supabase
-        .from("game_participations")
-        .update({ ranking_points: points, xp_earned: xp, is_winner: p.position === 1 })
-        .eq("id", p.id);
-      if (ue) throw ue;
-      updatedParts += 1;
+      const is_winner = p.position === 1;
+
+      // apenas empurra para o array, sem await
+      partUpdates.push({ id: p.id, ranking_points: points, xp_earned: xp, is_winner });
+
       if (p.user_id) {
-        const participation = { ...p, ranking_points: points, xp_earned: xp, is_winner: p.position === 1 };
+        const participation = { ...p, ranking_points: points, xp_earned: xp, is_winner };
         xpByUser.set(p.user_id, (xpByUser.get(p.user_id) || 0) + xp);
         if (game) {
           const history = historyByUser.get(p.user_id) ?? [];
@@ -71,6 +71,13 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       }
     }
   }
+
+  // um único upsert para todas as participações
+  const { error: ue } = await supabase
+    .from("game_participations")
+    .upsert(partUpdates, { onConflict: "id" });
+  if (ue) throw ue;
+  const updatedParts = partUpdates.length;
 
   const monthsByUser = new Map<string, number>();
   const asByUser = new Map<string, number>();
@@ -100,8 +107,8 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
   const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id");
   if (profilesError) throw profilesError;
 
-  // atualiza profiles.xp, level e ranking com XP de partidas + conquistas, inclusive histórico já existente
-  let updatedProfiles = 0;
+  // 2ª passagem: monta array de updates de perfis em memória
+  const profileUpdates: { id: string; xp: number; level: number; current_rank: number | null }[] = [];
   for (const profile of profiles ?? []) {
     const userId = (profile as ProfileIdRow).id;
     const achievements = computeAchievements({
@@ -111,14 +118,16 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
       kTitles: kByUser.get(userId) ?? 0,
     });
     const xp = (xpByUser.get(userId) ?? 0) + totalAchievementXp(achievements);
-    const {level} = levelFromXp(xp);
-    const { error: pe } = await supabase
-      .from("profiles")
-      .update({ xp, level, current_rank: rankByUser.get(userId) ?? null })
-      .eq("id", userId);
-    if (pe) throw pe;
-    updatedProfiles += 1;
+    const { level } = levelFromXp(xp);
+    profileUpdates.push({ id: userId, xp, level, current_rank: rankByUser.get(userId) ?? null });
   }
+
+  // um único upsert para todos os perfis
+  const { error: pe } = await supabase
+    .from("profiles")
+    .upsert(profileUpdates, { onConflict: "id" });
+  if (pe) throw pe;
+  const updatedProfiles = profileUpdates.length;
 
   return { games: list.length, participations: updatedParts, profiles: updatedProfiles };
 }
