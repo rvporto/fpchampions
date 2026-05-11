@@ -127,11 +127,16 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
   }
 
   // um único upsert para todos os perfis
-  const { error: pe } = await supabase
+  const profilePromises = profileUpdates.map(({ id, xp, level, current_rank }) =>
+  supabase
     .from("profiles")
-    .upsert(profileUpdates, { onConflict: "id" });
-  if (pe) throw pe;
-  const updatedProfiles = profileUpdates.length;
-
-  return { games: list.length, participations: updatedParts, profiles: updatedProfiles };
+    .update({ xp, level, current_rank })
+    .eq("id", id)
+);
+const profileResults = await Promise.all(profilePromises);
+const firstProfileError = profileResults.find((r) => r.error)?.error;
+if (firstProfileError) throw firstProfileError;
+const updatedProfiles = profileUpdates.length;
 }
+
+
