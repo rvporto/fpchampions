@@ -144,6 +144,7 @@ export function rowKey(r: { id: string; isTemp: boolean }) {
 export function useSeasonRankingDelta(year: number) {
   return useQuery({
     queryKey: ["ranking-delta", year, "last-game"],
+    staleTime: 5 * 60 * 1000, // não refetch por 5 minutos
     queryFn: async () => {
       const delta = new Map<string, number | null>();
       // Pega a última partida finalizada da temporada

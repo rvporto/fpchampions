@@ -22,7 +22,7 @@ export default function Ranking() {
   const [tab, setTab] = useState<"season" | "month">("season");
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const { user, isAdmin } = useAuth();
-  const { data: ranking, isLoading } = useRanking({ year, month: tab === "month" ? month : undefined });
+  const { data: ranking, isLoading, isError } = useRanking({ year, month: tab === "month" ? month : undefined });
   const { data: deltaMap } = useSeasonRankingDelta(year);
   const { data: champions = [] } = useSeasonChampions();
   const seasonClosed = champions.find((c) => c.year === year && (!!c.k_user_id || !!(c as any).k_temp_player_id));
@@ -99,6 +99,8 @@ export default function Ranking() {
 
       {isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>
+      ) : isError ? (
+        <Card className="fpc-card"><CardContent className="p-10 text-center text-sm text-muted-foreground">Erro ao carregar o ranking.</CardContent></Card>
       ) : list.length === 0 ? (
         <Card className="fpc-card"><CardContent className="p-10 text-center text-sm text-muted-foreground">Nenhuma partida finalizada {tab === "month" ? `em ${MONTHS_PT[month - 1]}` : "nesta temporada"}.</CardContent></Card>
       ) : (
