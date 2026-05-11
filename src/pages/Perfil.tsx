@@ -96,32 +96,7 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold">Histórico de Partidas</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {statsLoading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
-          {!statsLoading && (stats?.history.length ?? 0) === 0 && (
-            <p className="text-sm text-muted-foreground py-6 text-center">Sem partidas registradas ainda.</p>
-          )}
-          {stats?.history.map((h) => (
-            <div key={h.participation.id} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-secondary/40">
-              <div className="min-w-0">
-                <p className="font-medium text-sm break-words line-clamp-2">{h.game.name}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(h.game.date)}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-display text-primary">
-                  {h.participation.position ? `${h.participation.position}º` : "—"} · {formatPoints(Number(h.participation.ranking_points || 0))} pts
-                </p>
-                <p className="text-xs text-muted-foreground">+{h.participation.xp_earned} XP · {h.participation.ko_points} KOs</p>
-              </div>
-            </div>
-          ))}
-          {stats && stats.history.length > 0 && (
-            <div className="text-xs text-muted-foreground text-center mt-2">Total de KOs: {stats.ko}</div>
-          )}
-        </CardContent>
-      </Card>
+      <HistoryCard stats={stats} statsLoading={statsLoading} />
     </div>
   );
 }
