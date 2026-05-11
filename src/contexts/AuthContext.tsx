@@ -36,13 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadExtras = async (uid: string) => {
+  try {
     const [{ data: prof }, { data: roles }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
     ]);
     setProfile((prof as Profile | null) ?? null);
     setIsAdmin(!!roles?.some((r: any) => r.role === "admin"));
-  };
+  } catch (err) {
+    console.error("Erro ao carregar perfil:", err);
+    setProfile(null);
+    setIsAdmin(false);
+  }
+};
 
   useEffect(() => {
     // Listener PRIMEIRO
