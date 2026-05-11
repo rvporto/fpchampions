@@ -54,7 +54,6 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
         : 0;
       const is_winner = p.position === 1;
 
-      // apenas empurra para o array, sem await
       partUpdates.push({ id: p.id, ranking_points: points, xp_earned: xp, is_winner });
 
       if (p.user_id) {
@@ -72,11 +71,16 @@ export async function recalcRankingAndXp(): Promise<{ games: number; participati
     }
   }
 
-  // um único upsert para todas as participações
-  const { error: ue } = await supabase
-    .from("game_participations")
-    .upsert(partUpdates, { onConflict: "id" });
-  if (ue) throw ue;
+  // updates de participações em paralelo (sem await em série)
+  const updatePromises = partUpdates.map(({ id, ranking_points, xp_earned, is_winner }) =>
+    supabase
+      .from("game_participations")
+      .update({ ranking_points, xp_earned, is_winner })
+      .eq("id", id)
+  );
+  const results = await Promise.all(updatePromises);
+  const firstError = results.find((r) => r.error)?.error;
+  if (firstError) throw firstError;
   const updatedParts = partUpdates.length;
 
   const monthsByUser = new Map<string, number>();
