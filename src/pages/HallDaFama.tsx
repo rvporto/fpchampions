@@ -2,11 +2,15 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, Trophy, Spade, Award, Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Crown, Trophy, Spade, Award, Sparkles, Loader2, FileText } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useHallOfFame, type HallEntry } from "@/hooks/useHallOfFame";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddHallChampionDialog } from "@/components/AddHallChampionDialog";
+import { renderAndCapture } from "@/lib/reports";
+import { HallReport } from "@/components/HallReport";
+import { toast } from "sonner";
 
 export default function HallDaFama() {
   const [tab, setTab] = useState("rounds");
