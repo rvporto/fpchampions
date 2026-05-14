@@ -17,6 +17,8 @@ import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import { useAllMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
 import { LevelBadge } from "@/components/RankIndicators";
 import { GameQuickViewModal } from "@/components/GameQuickViewModal";
+import { renderAndCapture } from "@/lib/reports";
+import { RankingReport } from "@/components/Reports";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
