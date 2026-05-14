@@ -1,129 +1,87 @@
+# Plano de Execução — 3 alterações
 
-# Plano de Execução — 5 alterações
-
-Nada será aplicado até seu comando explícito. Abaixo, exatamente o que será mudado em cada arquivo.
+Nada será aplicado até comando explícito. Resumo do que muda em cada arquivo.
 
 ---
 
-## 1) Dashboard — 5 partidas recentes + visualização rápida
+## 1) Dashboard — botão "Relatório" do Ranking do Mês deve gerar o relatório
 
 **Arquivo:** `src/pages/Dashboard.tsx`
 
-- Linha 75: trocar `slice(0, 3)` por `slice(0, 5)` em `recentGames`.
-- Componente `RecentGamesCard` (linhas 294–313):
-  - Remover `<Link to="/partidas">` que envolve cada partida.
-  - Adicionar estado local `const [quickId, setQuickId] = useState<string | null>(null);`.
-  - Cada item vira um `<button onClick={() => setQuickId(g.id)}>` (mantendo as classes `fpc-card fpc-hover-gold p-3`).
-  - Renderizar ao final um novo modal `<GameQuickViewModal gameId={quickId} onOpenChange={(v) => !v && setQuickId(null)} />`.
+Hoje (linha ~196) o botão executa apenas `toast.info("Relatório em breve")`. Vamos:
 
-**Arquivo novo:** `src/components/GameQuickViewModal.tsx`
-
-- Modal somente-leitura (Dialog do shadcn).
-- Usa o hook existente `useGame(gameId)` (já em `src/hooks/useGames.ts`).
-- Mostra: nome, data (`formatDateTime`), buy-in/rebuy, pote total, prêmio, status; e a lista de participantes ordenada por `position` com avatar, apelido, posição, KOs, pontos de ranking, prêmio.
-- Botão "Ver detalhes completos" abre `GameDetailsModal` (opcional — ou apenas linka para `/partidas`).
-- Não duplica o `GameDetailsModal` (que tem edição admin); este é leve e público.
-
----
-
-## 2) Partidas — filtros (ano + mês) e paginação de 10
-
-**Arquivo:** `src/pages/Partidas.tsx`
-
-- Adicionar estados:
-  - `const [yearF, setYearF] = useState<number>(new Date().getFullYear());`
-  - `const [monthF, setMonthF] = useState<"all" | number>("all");`
-  - `const [visible, setVisible] = useState(10);`
-- Derivar `years` a partir de `games` (set de `g.season_year`, ordenado desc), garantindo que o ano vigente apareça mesmo sem partidas.
-- Filtragem com `useMemo`:
+- Importar `renderAndCapture` de `@/lib/reports` e `RankingReport` de `@/components/Reports`.
+- Passar `monthlyRanking` para dentro de `MonthlyRankingCard` (já é passado como `ranking`).
+- Trocar o `onClick` do botão por uma função `handleReport` que:
   ```ts
-  const filtered = games.filter(g =>
-    g.season_year === yearF && (monthF === "all" || g.month === monthF)
+  await renderAndCapture(
+    <RankingReport
+      title={`Ranking — ${MONTHS_PT[month - 1]} ${year}`}
+      subtitle={closed ? "Mês encerrado" : "Mês em andamento"}
+      rows={ranking}
+    />,
+    `ranking-${year}-${String(month).padStart(2, "0")}.jpg`
   );
-  const shown = filtered.slice(0, visible);
   ```
-- UI dos filtros (acima da lista, dentro do header da página): dois `Select` (shadcn) — "Temporada" (lista de anos) e "Mês" (`Todos` + `MONTHS_PT`). Ao alterar qualquer filtro, resetar `setVisible(10)`.
-- Botão "Mostrar mais" (`variant="outline"`, full width) renderizado apenas se `filtered.length > visible`; ao clicar: `setVisible(v => v + 10)`.
-- Mensagem vazia adaptada quando o filtro não retorna nada.
+- Manter mensagem vazia: se `ranking.length === 0` → `toast.info("Sem dados para gerar relatório.")`.
+- Estado `generating` para desabilitar o botão durante a captura (mostrar `Loader2` no lugar de `FileText`).
+
+Sem mudanças em outros componentes.
 
 ---
 
-## 3) Hall da Fama público (sem login)
+## 2) Hall da Fama — botão "Relatório" em "Vencedores de Rodadas"
 
-**Arquivo:** `src/App.tsx`
+**Arquivo novo:** `src/components/HallReport.tsx`
 
-- Linhas 52–59: remover o wrapper `<ProtectedRoute>` da rota `/hall-da-fama`, deixando:
-  ```tsx
-  <Route path="/hall-da-fama" element={<HallDaFama />} />
-  ```
+Componente de relatório (mesmo `wrap`/header dourado que `Reports.tsx`) com título "Hall da Fama — Temporada {ano}" (ou "Todas as temporadas"). Recebe:
+- `rounds: HallEntry[]` (vitórias por jogador)
+- `monthsByPlayerKey: Map<string, number>` (meses vencidos por jogador, usando a mesma `key` do HallEntry)
+
+Layout grande e legível:
+- Lista vertical, fonte ~22px para o nome, badge dourado grande para "X vitórias" e, quando aplicável, um segundo badge "Y meses".
+- Avatar 64px à esquerda, posição à esquerda, nick centralizado, badges à direita.
+- Empty state se `rounds.length === 0`.
 
 **Arquivo:** `src/pages/HallDaFama.tsx`
 
-- O `useAuth().isAdmin` já trata a ausência de usuário (volta `false`), então os botões de admin somem naturalmente. Sem outras mudanças necessárias.
+- Importar `renderAndCapture` e o novo `HallReport`.
+- Em `SeasonFilter` (TabsContent "rounds"), adicionar ao lado do `Select` um `Button` (variant outline) com ícone `FileText` → `Relatório`.
+- Função `handleRoundsReport`:
+  - Calcula `monthsList` correspondente ao mesmo filtro de ano:
+    - se `roundsYear === "all"`: `data.monthsAll`
+    - senão: `data.monthsByYear[Number(roundsYear)] ?? []`
+  - Monta `Map<string, number>` de `entry.key → entry.count` a partir dessa `monthsList`.
+  - Chama `renderAndCapture(<HallReport rounds={roundsList} monthsByPlayerKey={mapMeses} year={roundsYear==='all'?null:Number(roundsYear)} />, "hall-rodadas-{year|todas}.jpg")`.
+- Botão fica desabilitado e mostra `Loader2` enquanto gera.
+- Não alterar a aba "Meses" nem o restante.
 
-**Verificar:** `src/components/AppLayout.tsx` — confirmar que o link "Hall da Fama" aparece na navegação para visitantes (se houver gating por `user`, removê-lo apenas para esse item). Se já é público no menu, nenhuma mudança.
-
----
-
-## 4) Hall da Fama — filtro por temporada em "Rodadas" e "Mês"
-
-**Arquivo:** `src/hooks/useHallOfFame.ts`
-
-Mudança estrutural: hoje `rounds` e `months` são agregados globais. Para permitir filtragem por temporada, precisamos manter a granularidade por ano.
-
-- Em `HallData`, mudar:
-  - `rounds: HallEntry[]` → `roundsByYear: Record<number, HallEntry[]>` **e** `roundsAll: HallEntry[]` (agregação total — usado no modo "Todas as temporadas").
-  - `months: HallEntry[]` → `monthsByYear: Record<number, HallEntry[]>` **e** `monthsAll: HallEntry[]`.
-  - Adicionar `years: number[]` (lista de anos disponíveis em ordem desc).
-- Lógica:
-  - Para `rounds`: agrupar `parts` por `gamesList` cruzando `game_id → game.season_year`. Construir um mapa por ano `{ year → Map<key, HallEntry> }` e simultaneamente o agregado `roundsAll`.
-  - Para `months`: já temos `monthly_rankings` com `season_year`; agrupar por `season_year` e produzir `monthsAll` somando todos.
-  - `years`: união de `gamesList.map(g.season_year)` com `monthly_rankings.map(season_year)`, com `season_champions.map(year)`. Ordenar desc.
-- Manter `yearChampions` e `asChampions` como estão (já têm `year`).
-
-**Arquivo:** `src/pages/HallDaFama.tsx`
-
-- Adicionar estado:
-  ```ts
-  const currentYear = new Date().getFullYear();
-  const [roundsYear, setRoundsYear] = useState<number | "all">(currentYear);
-  const [monthsYear, setMonthsYear] = useState<number | "all">(currentYear);
-  ```
-- Computar listas filtradas:
-  - `roundsList = roundsYear === "all" ? data.roundsAll : (data.roundsByYear[roundsYear] ?? [])` (já ordenado desc por `count`).
-  - Idem para `monthsList`.
-- Em cada `TabsContent` ("rounds" e "months"), renderizar acima do `CountList` um `<Select>` com as opções: `Todas as temporadas` + `data.years` mapeadas. Default = ano vigente; se o vigente não existir em `years`, mostrar "Todas".
-- `CountList` continua igual (recebe `entries`).
+**Arquivo:** `src/hooks/useHallOfFame.ts` — sem alteração (já expõe `monthsByYear`/`monthsAll`).
 
 ---
 
-## 5) Perfil — filtro por temporada no histórico + paginação de 5
+## 3) Financeiro — adicionar 2 KPIs e reordenar
 
-**Arquivo:** `src/pages/Perfil.tsx`
+**Arquivo:** `src/pages/AdminFinanceiro.tsx`
 
-- Adicionar estados:
+- Calcular o mês vigente:
   ```ts
-  const [histYear, setHistYear] = useState<number | "all">(new Date().getFullYear());
-  const [histVisible, setHistVisible] = useState(5);
+  const currentMonth = new Date().getMonth() + 1;
+  const currentMonthData = byMonth.find(m => m.month === currentMonth);
+  const rakeAsMonth = currentMonthData?.rakeAs ?? 0;
+  const rakeMonthMonth = currentMonthData?.rakeMonth ?? 0;
+  const monthLabel = MONTHS_PT[currentMonth - 1];
   ```
-- Computar:
-  ```ts
-  const histYears = useMemo(() => {
-    const ys = new Set((stats?.history ?? []).map(h => h.game.season_year));
-    return [...ys].sort((a,b)=>b-a);
-  }, [stats]);
-  const filteredHist = useMemo(() => {
-    const list = stats?.history ?? [];
-    return histYear === "all" ? list : list.filter(h => h.game.season_year === histYear);
-  }, [stats, histYear]);
-  const shownHist = filteredHist.slice(0, histVisible);
-  ```
-- No card "Histórico de Partidas":
-  - Adicionar no `CardHeader` (ao lado do título, com `flex justify-between`) um `<Select>` para temporada (`Todas` + `histYears`).
-  - Trocar `stats?.history.map` por `shownHist.map`.
-  - Após a lista, se `filteredHist.length > histVisible`: renderizar botão `Mostrar mais` (`variant="outline"`, full width) que faz `setHistVisible(v => v + 5)`.
-  - Resetar `histVisible` para 5 quando `histYear` muda (via `useEffect`).
-- Verificar: o tipo `stats.history[i].game` deve ter `season_year` (ele tem — vem de `DbGame`).
+- Trocar o grid (linhas 61–66) para 6 colunas e nesta ordem:
+  1. `Rake Ás (${monthLabel})` → `formatBRL(rakeAsMonth)` `accent`
+  2. `Rake (${monthLabel})` → `formatBRL(rakeMonthMonth)`
+  3. `Total Ás (ano)` → `formatBRL(totals.rakeAs)` `accent`
+  4. `Total Mês (${year})` → `formatBRL(totals.rakeMonth)`
+  5. `Saldo do Ás` → `formatBRL(totals.asBalance)` `highlight`
+  6. `Premiação Distribuída` → `formatBRL(totals.prize)`
+- Grid responsivo: `grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3`.
+
+Nenhuma mudança em hooks/SQL.
 
 ---
 
@@ -131,15 +89,9 @@ Mudança estrutural: hoje `rounds` e `months` são agregados globais. Para permi
 
 | Arquivo | Tipo |
 |---|---|
-| `src/pages/Dashboard.tsx` | edit |
-| `src/components/GameQuickViewModal.tsx` | new |
-| `src/pages/Partidas.tsx` | edit |
-| `src/App.tsx` | edit (remover ProtectedRoute do hall) |
-| `src/components/AppLayout.tsx` | verificar/edit (visibilidade do link sem login) |
-| `src/hooks/useHallOfFame.ts` | edit (estrutura por ano) |
-| `src/pages/HallDaFama.tsx` | edit (filtros por temporada) |
-| `src/pages/Perfil.tsx` | edit (filtro + paginação histórico) |
+| `src/pages/Dashboard.tsx` | edit (botão Relatório do mês) |
+| `src/components/HallReport.tsx` | new (componente de relatório do Hall) |
+| `src/pages/HallDaFama.tsx` | edit (botão Relatório na aba Rodadas) |
+| `src/pages/AdminFinanceiro.tsx` | edit (2 novos KPIs + reordenação) |
 
-Nada de mudanças de SQL/banco — só frontend.
-
-Aguardando seu OK para executar (pode pedir para fazer tudo, ou só os itens 1, 2, 3, 4 ou 5).
+Sem mudanças de banco/SQL. Aguardando comando para executar (tudo ou itens específicos).
