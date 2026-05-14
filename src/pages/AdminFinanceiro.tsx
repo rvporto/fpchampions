@@ -27,6 +27,23 @@ export default function AdminFinanceiro() {
 
   const finishedYear = games.filter((g) => g.status === "finished" && g.season_year === year);
 
+  // anos disponíveis para o filtro de partidas
+  const years = useMemo(() => {
+    const ys = new Set(games.filter((g) => g.status === "finished").map((g) => g.season_year));
+    return [...ys].sort((a, b) => b - a);
+  }, [games]);
+
+  const [filterYear, setFilterYear] = useState<number>(year);
+  const [visible, setVisible] = useState(10);
+
+  const finishedFiltered = useMemo(() =>
+    games
+      .filter((g) => g.status === "finished" && g.season_year === filterYear)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [games, filterYear]
+  );
+  const finishedShown = finishedFiltered.slice(0, visible);
+
   const byMonth = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
@@ -180,8 +197,26 @@ export default function AdminFinanceiro() {
         </CardContent>
       </Card>
 
+      {/* Card de partidas com filtro e paginação */}
       <Card className="fpc-card">
-        <CardHeader><CardTitle className="font-display fpc-text-gold">Partidas — Detalhamento de Rakes</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 flex-wrap gap-2">
+          <CardTitle className="font-display fpc-text-gold">Partidas — Detalhamento de Rakes</CardTitle>
+          {years.length > 0 && (
+            <Select
+              value={String(filterYear)}
+              onValueChange={(v) => { setFilterYear(Number(v)); setVisible(10); }}
+            >
+              <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-muted-foreground border-b border-border">
@@ -195,7 +230,7 @@ export default function AdminFinanceiro() {
               </tr>
             </thead>
             <tbody>
-              {finishedYear.map((g) => (
+              {finishedShown.map((g) => (
                 <tr key={g.id} className="border-b border-border/40">
                   <td className="py-2 px-2 break-words">{g.name}</td>
                   <td className="text-right px-2">{formatBRL(Number(g.total_pot))}</td>
@@ -205,11 +240,23 @@ export default function AdminFinanceiro() {
                   <td className="text-right px-2 text-primary">{formatBRL(Number(g.prize_pool))}</td>
                 </tr>
               ))}
-              {finishedYear.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-muted-foreground py-6 text-sm">Nenhuma partida finalizada na temporada.</td></tr>
+              {finishedFiltered.length === 0 && (
+                <tr><td colSpan={6} className="text-center text-muted-foreground py-6 text-sm">Nenhuma partida finalizada em {filterYear}.</td></tr>
               )}
             </tbody>
           </table>
+
+          {finishedFiltered.length > visible && (
+            <div className="pt-4">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setVisible((v) => v + 10)}
+              >
+                Mostrar mais ({finishedFiltered.length - visible} restantes)
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
