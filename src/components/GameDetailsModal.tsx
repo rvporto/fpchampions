@@ -47,6 +47,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
   // Estado local de inputs por participante
   type Row = { id: string; entries: number; rebuys: number; position: number | null; ko_points: number; prize_won: number };
   const [rows, setRows] = useState<Record<string, Row>>({});
+  const [gameName, setGameName] = useState("");
   const [rakeAs, setRakeAs] = useState(0);
   const [rakeMonth, setRakeMonth] = useState(0);
   const [croupier, setCroupier] = useState(0);
@@ -83,6 +84,7 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
         };
       }
       setRows(map);
+      setGameName(game.name ?? "");
       setRakeAs(Number(game.rake_as) || 0);
       setRakeMonth(Number(game.rake_month) || 0);
       setCroupier(Number(game.croupier_fee) || 0);
@@ -96,7 +98,6 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
     const { totalPlayers, totalActions } = gameTotals(list);
     const fm = getFM(totalActions);
     const totalPot = list.reduce((s, r) => {
-      // pot = entries*buy_in + rebuys*rebuy_value
       return s + (r.entries * (Number(game?.buy_in) || 0)) + (r.rebuys * (Number(game?.rebuy_value) || 0));
     }, 0);
     const asExtra = isAsGame ? Number(asPrizeAmount || 0) : 0;
@@ -131,10 +132,11 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
     if (!game) return;
     try {
       const asAmountToCharge = isAsGame ? Number(asPrizeAmount || 0) : 0;
-      // 1. update game (rakes, totals, status)
+      // 1. update game (nome, rakes, totals, status)
       await updateGame.mutateAsync({
         id: game.id,
         patch: {
+          name: gameName.trim() || game.name,
           rake_as: rakeAs,
           rake_month: rakeMonth,
           croupier_fee: croupier,
@@ -161,16 +163,14 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
             ranking_points: finalize ? breakdown.total : 0,
             total_invested: totalInvested,
             prize_won: r.prize_won,
-            // xp_earned será calculado pela edge function update-ranking depois
           } as any,
         });
       }
       if (finalize) {
-        // débita o valor do Ás se for partida do Ás (apenas no momento de finalizar e somente uma vez)
         if (isAsGame && asAmountToCharge > 0 && !(game.is_as_game && Number(game.as_prize_amount || 0) > 0)) {
           await supabase.from("as_pool").insert({
             game_id: game.id,
-            description: `Premiação Ás do Poker — ${game.name}`,
+            description: `Premiação Ás do Poker — ${gameName.trim() || game.name}`,
             amount: -Math.abs(asAmountToCharge),
           });
         }
@@ -218,7 +218,16 @@ export function GameDetailsModal({ gameId, onOpenChange }: Props) {
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display fpc-text-gold flex items-center gap-2 break-words flex-wrap">
-            {game?.name ?? "Carregando..."}
+            {/* Nome editável apenas para admin em partidas não finalizadas */}
+            {game && isAdmin && game.status !== "finished" ? (
+              <Input
+                value={gameName}
+                onChange={(e) => setGameName(e.target.value)}
+                className="font-display fpc-text-gold text-lg h-9 border-primary/40 bg-transparent max-w-xs"
+              />
+            ) : (
+              game?.name ?? "Carregando..."
+            )}
             {game && (
               <>
                 <Badge variant={game.status === "finished" ? "default" : game.status === "in_progress" ? "secondary" : "outline"}>
