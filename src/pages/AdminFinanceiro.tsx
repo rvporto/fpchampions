@@ -49,6 +49,12 @@ export default function AdminFinanceiro() {
 
   const yearChampion = champions.find((c) => c.year === year);
 
+  const currentMonth = new Date().getMonth() + 1;
+  const currentMonthData = byMonth.find((m) => m.month === currentMonth);
+  const rakeAsMonth = currentMonthData?.rakeAs ?? 0;
+  const rakeMonthMonth = currentMonthData?.rakeMonth ?? 0;
+  const monthLabel = MONTHS_PT[currentMonth - 1];
+
   if (gLoading || eLoading) return <div className="flex justify-center py-16"><Loader2 className="size-8 text-primary animate-spin" /></div>;
 
   return (
@@ -58,11 +64,13 @@ export default function AdminFinanceiro() {
         <p className="text-sm text-muted-foreground">Rakes (Ás, Mês), premiações e despesas operacionais.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KpiCard label={`Rake Ás (${monthLabel})`} value={formatBRL(rakeAsMonth)} accent />
+        <KpiCard label={`Rake (${monthLabel})`} value={formatBRL(rakeMonthMonth)} />
         <KpiCard label="Total Ás (ano)" value={formatBRL(totals.rakeAs)} accent />
-        <KpiCard label="Total Mês (ano)" value={formatBRL(totals.rakeMonth)} />
-        <KpiCard label="Premiação Distribuída" value={formatBRL(totals.prize)} />
+        <KpiCard label={`Total Mês (${year})`} value={formatBRL(totals.rakeMonth)} />
         <KpiCard label="Saldo do Ás" value={formatBRL(totals.asBalance)} highlight />
+        <KpiCard label="Premiação Distribuída" value={formatBRL(totals.prize)} />
       </div>
 
       <Card className="fpc-card">
