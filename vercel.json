@@ -32,7 +32,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: https://*.supabase.co https://storage.googleapis.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: https://*.supabase.co https://storage.googleapis.com https://lh3.googleusercontent.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
         }
       ]
     }
