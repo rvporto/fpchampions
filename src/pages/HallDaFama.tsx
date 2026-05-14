@@ -35,6 +35,29 @@ export default function HallDaFama() {
     return data.monthsByYear[Number(monthsYear)] ?? [];
   }, [data, monthsYear]);
 
+  const [genRounds, setGenRounds] = useState(false);
+  const handleRoundsReport = async () => {
+    if (!data) return;
+    if (roundsList.length === 0) {
+      toast.info("Sem dados para gerar relatório.");
+      return;
+    }
+    const monthsForFilter = roundsYear === "all" ? data.monthsAll : (data.monthsByYear[Number(roundsYear)] ?? []);
+    const monthsByPlayerKey = new Map<string, number>();
+    for (const m of monthsForFilter) monthsByPlayerKey.set(m.key, m.count);
+    setGenRounds(true);
+    try {
+      await renderAndCapture(
+        <HallReport rounds={roundsList} monthsByPlayerKey={monthsByPlayerKey} year={roundsYear === "all" ? null : Number(roundsYear)} />,
+        `hall-rodadas-${roundsYear === "all" ? "todas" : roundsYear}.jpg`
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar relatório.");
+    } finally {
+      setGenRounds(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
