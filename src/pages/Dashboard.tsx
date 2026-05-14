@@ -17,6 +17,8 @@ import { computeAchievements, totalAchievementXp } from "@/lib/achievements";
 import { useAllMonthlyRankings, useSeasonChampions } from "@/hooks/useFinance";
 import { LevelBadge } from "@/components/RankIndicators";
 import { GameQuickViewModal } from "@/components/GameQuickViewModal";
+import { renderAndCapture } from "@/lib/reports";
+import { RankingReport } from "@/components/Reports";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -175,6 +177,29 @@ function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUse
   const showMeRow = myIndex >= 5;
   const meRow = showMeRow ? ranking[myIndex] : null;
   const winner = ranking[0] as RankingRow | undefined;
+  const [generating, setGenerating] = useState(false);
+
+  const handleReport = async () => {
+    if (!ranking || ranking.length === 0) {
+      toast.info("Sem dados para gerar relatório.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      await renderAndCapture(
+        <RankingReport
+          title={`Ranking — ${MONTHS_PT[month - 1]} ${year}`}
+          subtitle={closed ? "Mês encerrado" : "Mês em andamento"}
+          rows={ranking}
+        />,
+        `ranking-${year}-${String(month).padStart(2, "0")}.jpg`
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar relatório.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <Card className="fpc-card overflow-hidden">
@@ -193,8 +218,9 @@ function MonthlyRankingCard({ ranking, myIndex, year, month, loading, currentUse
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Relatório em breve")}>
-            <FileText className="size-4 mr-1" />Relatório
+          <Button variant="outline" size="sm" onClick={handleReport} disabled={generating}>
+            {generating ? <Loader2 className="size-4 mr-1 animate-spin" /> : <FileText className="size-4 mr-1" />}
+            Relatório
           </Button>
           <ExpandRankingSheet ranking={ranking} year={year} month={month} currentUserId={currentUserId} />
         </div>

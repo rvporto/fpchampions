@@ -2,11 +2,15 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, Trophy, Spade, Award, Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Crown, Trophy, Spade, Award, Sparkles, Loader2, FileText } from "lucide-react";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useHallOfFame, type HallEntry } from "@/hooks/useHallOfFame";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddHallChampionDialog } from "@/components/AddHallChampionDialog";
+import { renderAndCapture } from "@/lib/reports";
+import { HallReport } from "@/components/HallReport";
+import { toast } from "sonner";
 
 export default function HallDaFama() {
   const [tab, setTab] = useState("rounds");
@@ -31,6 +35,29 @@ export default function HallDaFama() {
     return data.monthsByYear[Number(monthsYear)] ?? [];
   }, [data, monthsYear]);
 
+  const [genRounds, setGenRounds] = useState(false);
+  const handleRoundsReport = async () => {
+    if (!data) return;
+    if (roundsList.length === 0) {
+      toast.info("Sem dados para gerar relatório.");
+      return;
+    }
+    const monthsForFilter = roundsYear === "all" ? data.monthsAll : (data.monthsByYear[Number(roundsYear)] ?? []);
+    const monthsByPlayerKey = new Map<string, number>();
+    for (const m of monthsForFilter) monthsByPlayerKey.set(m.key, m.count);
+    setGenRounds(true);
+    try {
+      await renderAndCapture(
+        <HallReport rounds={roundsList} monthsByPlayerKey={monthsByPlayerKey} year={roundsYear === "all" ? null : Number(roundsYear)} />,
+        `hall-rodadas-${roundsYear === "all" ? "todas" : roundsYear}.jpg`
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar relatório.");
+    } finally {
+      setGenRounds(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -50,7 +77,13 @@ export default function HallDaFama() {
           </TabsList>
 
           <TabsContent value="rounds" className="mt-4 space-y-3">
-            <SeasonFilter value={roundsYear} onChange={setRoundsYear} years={yearOptions} />
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <SeasonFilter value={roundsYear} onChange={setRoundsYear} years={yearOptions} />
+              <Button variant="outline" size="sm" onClick={handleRoundsReport} disabled={genRounds}>
+                {genRounds ? <Loader2 className="size-4 mr-1 animate-spin" /> : <FileText className="size-4 mr-1" />}
+                Relatório
+              </Button>
+            </div>
             <CountList title="Vencedores de Rodada" icon={<Trophy className="size-5" />} entries={roundsList} unit="vitórias" />
           </TabsContent>
           <TabsContent value="months" className="mt-4 space-y-3">
