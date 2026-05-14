@@ -77,7 +77,13 @@ export default function HallDaFama() {
           </TabsList>
 
           <TabsContent value="rounds" className="mt-4 space-y-3">
-            <SeasonFilter value={roundsYear} onChange={setRoundsYear} years={yearOptions} />
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <SeasonFilter value={roundsYear} onChange={setRoundsYear} years={yearOptions} />
+              <Button variant="outline" size="sm" onClick={handleRoundsReport} disabled={genRounds}>
+                {genRounds ? <Loader2 className="size-4 mr-1 animate-spin" /> : <FileText className="size-4 mr-1" />}
+                Relatório
+              </Button>
+            </div>
             <CountList title="Vencedores de Rodada" icon={<Trophy className="size-5" />} entries={roundsList} unit="vitórias" />
           </TabsContent>
           <TabsContent value="months" className="mt-4 space-y-3">
