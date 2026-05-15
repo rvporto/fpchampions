@@ -104,7 +104,7 @@ export default function Dashboard() {
       />
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <SeasonTopCard ranking={seasonRanking} year={year} loading={lr2} currentUserId={user?.id} />
+        <SeasonTopCard ranking={seasonRanking} year={year} loading={lr2} currentUserId={user?.id} myIndex={mySeasonIndex} />
         <RecentGamesCard games={recentGames} />
       </div>
     </div>
@@ -300,7 +300,11 @@ function ExpandRankingSheet({ ranking, year, month, currentUserId }: any) {
   );
 }
 
-function SeasonTopCard({ ranking, year, loading, currentUserId }: any) {
+function SeasonTopCard({ ranking, year, loading, currentUserId, myIndex }: any) {
+  const top5 = ranking.slice(0, 5);
+  const showMeRow = myIndex >= 5;
+  const meRow = showMeRow ? ranking[myIndex] : null;
+
   return (
     <Card className="fpc-card">
       <CardHeader>
@@ -309,9 +313,15 @@ function SeasonTopCard({ ranking, year, loading, currentUserId }: any) {
       <CardContent className="space-y-2">
         {loading && <div className="flex justify-center py-6"><Loader2 className="size-5 text-primary animate-spin" /></div>}
         {!loading && ranking.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem dados ainda.</p>}
-        {ranking.slice(0, 5).map((row: RankingRow, i: number) => (
+        {top5.map((row: RankingRow, i: number) => (
           <RankRow key={`${row.isTemp ? "t" : "u"}-${row.id}`} idx={i + 1} row={row} highlight={!row.isTemp && row.id === currentUserId} />
         ))}
+        {showMeRow && meRow && (
+          <>
+            <div className="fpc-divider my-2" />
+            <RankRow idx={myIndex + 1} row={meRow} highlight you />
+          </>
+        )}
         <Link to="/ranking" className="block text-center text-xs text-primary hover:underline mt-3">Ver ranking completo →</Link>
       </CardContent>
     </Card>
