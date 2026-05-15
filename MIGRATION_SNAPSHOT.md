@@ -745,7 +745,7 @@ Não há arquivos especiais gerados pelo Lovable que precisem ser exportados al�
 4. Conectar repo na Vercel, setar envs, deploy de preview.
 5. Atualizar Supabase Site URL / Redirect URLs com a URL de preview.
 6. Smoke test completo (lista da §14).
-7. Promover para produção / adicionar domínio.
+7. Promover para produção / adicionar domínio..
 
 ---
 
