@@ -25,6 +25,7 @@ dist-ssr
 *.sw?
 .env
 node_mdules/
-.lovable
+.lovable/
+dev-dist/
 
 
