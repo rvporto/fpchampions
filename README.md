@@ -263,4 +263,4 @@ O gating de rotas é feito por `src/components/ProtectedRoute.tsx` que lê o `Au
 
 ## Licença
 
-Projeto privado — uso restrito ao grupo Família Poker Champions.
+Projeto privado. — uso restrito ao grupo Família Poker Champions.
